@@ -1,0 +1,56 @@
+# Operating System & IDE
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Node / Frontend
+node_modules/
+frontend/node_modules/
+.expo/
+frontend/.expo/
+dist/
+frontend/dist/
+web-build/
+frontend/web-build/
+*.tsbuildinfo
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+.metro-health-check*
+
+# Environment & Local configuration
+.env
+.env.local
+.env.*.local
+
+# Python / Data processing
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+.venv/
+venv/
+ENV/
+
+# Go / Backend binaries
+backend/api
+backend/main
+backend/bin/
+bin/
+*.exe
+*.test
+*.prof
+
+# SQLite temporary & WAL files (keep seed database)
+*.db-shm
+*.db-wal
+*.sqlite3-shm
+*.sqlite3-wal
+
+# Heavy raw datasets (>750MB raw INE dumps; clean data is in backend/data/ and db/matchcivico.db)
+backend/Datos/*
+!backend/Datos/.gitkeep
