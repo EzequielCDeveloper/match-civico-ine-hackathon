@@ -1,0 +1,40 @@
+// Official catalogue of the 32 Mexican Federal Entities (ID and Name only)
+export interface EstadoCatalogo {
+  id: number;
+  nombre: string;
+}
+
+export const ESTADOS_MEXICO: EstadoCatalogo[] = [
+  { id: 1, nombre: 'Aguascalientes' },
+  { id: 2, nombre: 'Baja California' },
+  { id: 3, nombre: 'Baja California Sur' },
+  { id: 4, nombre: 'Campeche' },
+  { id: 5, nombre: 'Coahuila' },
+  { id: 6, nombre: 'Colima' },
+  { id: 7, nombre: 'Chiapas' },
+  { id: 8, nombre: 'Chihuahua' },
+  { id: 9, nombre: 'Ciudad de México' },
+  { id: 10, nombre: 'Durango' },
+  { id: 11, nombre: 'Guanajuato' },
+  { id: 12, nombre: 'Guerrero' },
+  { id: 13, nombre: 'Hidalgo' },
+  { id: 14, nombre: 'Jalisco' },
+  { id: 15, nombre: 'México' },
+  { id: 16, nombre: 'Michoacán' },
+  { id: 17, nombre: 'Morelos' },
+  { id: 18, nombre: 'Nayarit' },
+  { id: 19, nombre: 'Nuevo León' },
+  { id: 20, nombre: 'Oaxaca' },
+  { id: 21, nombre: 'Puebla' },
+  { id: 22, nombre: 'Querétaro' },
+  { id: 23, nombre: 'Quintana Roo' },
+  { id: 24, nombre: 'San Luis Potosí' },
+  { id: 25, nombre: 'Sinaloa' },
+  { id: 26, nombre: 'Sonora' },
+  { id: 27, nombre: 'Tabasco' },
+  { id: 28, nombre: 'TamaulIPAs' },
+  { id: 29, nombre: 'Tlaxcala' },
+  { id: 30, nombre: 'Veracruz' },
+  { id: 31, nombre: 'Yucatán' },
+  { id: 32, nombre: 'Zacatecas' },
+];
