@@ -63,6 +63,17 @@ Almacena las 4,584 candidaturas federales registradas ante el INE para el proces
 - `idx_candidatos_distrito` (`distrito_id`)
 - `idx_candidatos_titulo` (`tiene_titulo`)
 
+### 3.1.1. Tabla: `candidatos_etiquetas` (Módulo Luis)
+Pesos de 0 a 1 de cada propuesta, usados por el árbol de decisión. El detalle de la taxonomía, el modelo y el script está en [`etiquetado_candidatos.md`](etiquetado_candidatos.md). `init_sqlite.py` crea la tabla vacía; la llena `backend/scripts/etiquetado/etiquetar.py`.
+
+| Columna | Tipo SQLite | Descripción |
+| :--- | :--- | :--- |
+| `id_anonimo` | `INTEGER` | Candidato. Llave primaria junto con `etiqueta`. |
+| `etiqueta` | `TEXT` | `eje_<tema>`, `enfoque_<eje>.<opcion>`, `concrecion` o `competencia_cargo`. |
+| `peso` | `REAL` | De 0 a 1. En un enfoque ya viene multiplicado por la probabilidad de su eje. |
+
+**Índice**: `idx_candidatos_etiquetas_etiqueta` (`etiqueta`).
+
 ---
 
 ### 3.2. Tabla: `votantes_entidades` (Módulo Ezequiel)
@@ -167,3 +178,11 @@ Este script:
 2. Procesa `backend/data/datos_unificados.json`.
 3. Inserta masivamente los registros en transacciones preparadas.
 4. Genera [`db/matchcivico.db`](file:///home/anon/uni/cua9/movil/hackathon/db/matchcivico.db) y sincroniza [`backend/data/matchcivico.db`](file:///home/anon/uni/cua9/movil/hackathon/backend/data/matchcivico.db).
+
+El script **borra** la base antes de crearla, así que también vacía `candidatos_etiquetas`. Para recuperarla sin volver a llamar al modelo:
+
+```bash
+python3 backend/scripts/etiquetado/etiquetar.py
+```
+
+Si `backend/data/candidatos_etiquetas_raw.jsonl` ya tiene las respuestas de la versión actual de la taxonomía, el script solo recarga la tabla.

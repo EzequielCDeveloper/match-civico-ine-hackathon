@@ -47,6 +47,18 @@ CREATE INDEX IF NOT EXISTS idx_candidatos_cargo ON candidatos_candidatos(cargo);
 CREATE INDEX IF NOT EXISTS idx_candidatos_distrito ON candidatos_candidatos(distrito_id);
 CREATE INDEX IF NOT EXISTS idx_candidatos_titulo ON candidatos_candidatos(tiene_titulo);
 
+-- Filled by backend/scripts/etiquetado/etiquetar.py (not by init_sqlite.py).
+-- etiqueta: 'eje_<tema>', 'enfoque_<eje>.<opcion>', 'concrecion' or 'competencia_cargo'.
+-- peso: 0..1. Enfoque weights are already multiplied by the probability of their eje.
+CREATE TABLE IF NOT EXISTS candidatos_etiquetas (
+    id_anonimo INTEGER NOT NULL,
+    etiqueta TEXT NOT NULL,
+    peso REAL NOT NULL,
+    PRIMARY KEY (id_anonimo, etiqueta)
+);
+
+CREATE INDEX IF NOT EXISTS idx_candidatos_etiquetas_etiqueta ON candidatos_etiquetas(etiqueta);
+
 -- ------------------------------------------------------------------------------
 -- MODULE 2: VOTANTES (Ezequiel)
 -- Responsibilities: Voter user profile, participation statistics, profile matching.

@@ -42,3 +42,8 @@ Bienvenido a la documentación técnica oficial de **Match Cívico**, plataforma
    - Matriz de pruebas de seguridad y pentesting básico (inyección SQL, CORS, validación).
    - Criterios de auditoría UI/UX y accesibilidad móvil.
    - Casos de prueba recomendados para cada módulo.
+
+7. [**Etiquetado de propuestas y árbol de decisión (`etiquetado_candidatos.md`)**](etiquetado_candidatos.md)
+   - Taxonomía de ejes, enfoques y concreción del módulo de Luis.
+   - Pesos en `candidatos_etiquetas` y cómo se calculan.
+   - Cómo correr Decider en local y el script de etiquetado.
