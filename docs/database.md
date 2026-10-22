@@ -167,6 +167,8 @@ Registro de documentos y reportes exportados en formato PDF o datos crudos.
 
 ---
 
+El detalle de columnas, filtros y fórmulas está en [`uso_datos_ine.md`](uso_datos_ine.md).
+
 ## 4. Script de Inicialización y Resiembra
 
 En caso de requerir reconstruir la base de datos desde los datos originales de INE:

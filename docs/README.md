@@ -43,7 +43,12 @@ Bienvenido a la documentación técnica oficial de **Match Cívico**, plataforma
    - Criterios de auditoría UI/UX y accesibilidad móvil.
    - Casos de prueba recomendados para cada módulo.
 
-7. [**Etiquetado de propuestas y árbol de decisión (`etiquetado_candidatos.md`)**](etiquetado_candidatos.md)
+7. [**Uso de los datos del INE (`uso_datos_ine.md`)**](uso_datos_ine.md)
+   - Fuentes: Conteos Censales 2024 y Conóceles.
+   - Columnas conservadas, agregaciones y la fórmula de participación que usa el código.
+   - Diferencia con la fórmula del manual DECEyEC y con lo que pide la convocatoria 2026.
+
+8. [**Etiquetado de propuestas y árbol de decisión (`etiquetado_candidatos.md`)**](etiquetado_candidatos.md)
    - Taxonomía de ejes, enfoques y concreción del módulo de Luis.
    - Pesos en `candidatos_etiquetas` y cómo se calculan.
    - Cómo correr Decider en local y el script de etiquetado.
