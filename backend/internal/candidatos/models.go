@@ -48,3 +48,14 @@ type CandidatoListResponse struct {
 	Total int         `json:"total"`
 	Items []Candidato `json:"items"`
 }
+
+// MatchCandidato is the payload for the blind comparison. No contact fields.
+type MatchCandidato struct {
+	IDAnonimo        int                `json:"id_anonimo"`
+	NombreCandidato  string             `json:"nombre_candidato"`
+	PartidoCoalicion string             `json:"partido_coalicion"`
+	Cargo            string             `json:"cargo"`
+	Propuesta1       string             `json:"propuesta_1"`
+	Propuesta2       string             `json:"propuesta_2"`
+	Etiquetas        map[string]float64 `json:"etiquetas"`
+}

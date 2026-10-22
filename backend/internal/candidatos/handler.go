@@ -182,3 +182,86 @@ func (h *Handler) GetByID(w http.ResponseWriter, r *http.Request) {
 
 	common.RespondJSON(w, http.StatusOK, c)
 }
+
+// ParaMatch returns proposal-bearing owners in one state, with eje weights.
+// The client uses the weights to choose the next blind card. Names stay in the
+// payload so the summary can reveal them after the swipes; the card must not show them.
+func (h *Handler) ParaMatch(w http.ResponseWriter, r *http.Request) {
+	entidad := normalizarEntidad(r.URL.Query().Get("entidad"))
+	if entidad == "" {
+		common.RespondError(w, http.StatusBadRequest, "Falta la entidad")
+		return
+	}
+
+	rows, err := h.db.Query(`
+		SELECT id_anonimo, nombre_candidato, partido_coalicion, cargo, propuesta_1, propuesta_2
+		FROM candidatos_candidatos
+		WHERE tipo_candidato = 'Persona Propietaria'
+		  AND tiene_propuestas = 1
+		  AND entidad = ?
+		ORDER BY id_anonimo
+	`, entidad)
+	if err != nil {
+		common.RespondError(w, http.StatusInternalServerError, "Error querying candidates: "+err.Error())
+		return
+	}
+	defer rows.Close()
+
+	items := make([]*MatchCandidato, 0)
+	byID := map[int]*MatchCandidato{}
+	for rows.Next() {
+		c := &MatchCandidato{Etiquetas: map[string]float64{}}
+		if err := rows.Scan(&c.IDAnonimo, &c.NombreCandidato, &c.PartidoCoalicion, &c.Cargo, &c.Propuesta1, &c.Propuesta2); err != nil {
+			common.RespondError(w, http.StatusInternalServerError, "Error scanning candidate: "+err.Error())
+			return
+		}
+		items = append(items, c)
+		byID[c.IDAnonimo] = c
+	}
+	if err := rows.Err(); err != nil {
+		common.RespondError(w, http.StatusInternalServerError, "Error reading candidates: "+err.Error())
+		return
+	}
+
+	tagRows, err := h.db.Query(`
+		SELECT e.id_anonimo, e.etiqueta, e.peso
+		FROM candidatos_etiquetas e
+		JOIN candidatos_candidatos c ON c.id_anonimo = e.id_anonimo
+		WHERE c.tipo_candidato = 'Persona Propietaria'
+		  AND c.tiene_propuestas = 1
+		  AND c.entidad = ?
+		  AND e.etiqueta LIKE 'eje_%'
+	`, entidad)
+	if err != nil {
+		common.RespondError(w, http.StatusInternalServerError, "Error querying labels: "+err.Error())
+		return
+	}
+	defer tagRows.Close()
+
+	for tagRows.Next() {
+		var id int
+		var etiqueta string
+		var peso float64
+		if err := tagRows.Scan(&id, &etiqueta, &peso); err != nil {
+			common.RespondError(w, http.StatusInternalServerError, "Error scanning label: "+err.Error())
+			return
+		}
+		if c, ok := byID[id]; ok {
+			c.Etiquetas[etiqueta] = peso
+		}
+	}
+
+	common.RespondJSON(w, http.StatusOK, map[string]any{
+		"entidad": entidad,
+		"total":   len(items),
+		"items":   items,
+	})
+}
+
+func normalizarEntidad(s string) string {
+	s = strings.ToUpper(strings.TrimSpace(s))
+	s = strings.NewReplacer(
+		"Á", "A", "É", "E", "Í", "I", "Ó", "O", "Ú", "U", "Ü", "U", "Ñ", "N",
+	).Replace(s)
+	return strings.Join(strings.Fields(s), " ")
+}

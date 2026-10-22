@@ -13,6 +13,7 @@ func RegisterRoutes(r chi.Router, db *sql.DB) {
 
 	r.Route("/candidatos", func(r chi.Router) {
 		r.Get("/", h.List)
+		r.Get("/para-match", h.ParaMatch)
 		r.Get("/{id}", h.GetByID)
 	})
 }

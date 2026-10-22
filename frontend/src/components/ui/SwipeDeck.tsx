@@ -142,7 +142,7 @@ export function SwipeDeck<T>({
             pointerEvents="none"
             style={[styles.layer, { transform: [{ scale: nextScale }] }]}
           >
-            <View style={{ width: cardWidth, flex: 1 }}>{renderCard(second)}</View>
+            <View style={{ width: cardWidth, flex: 1, minHeight: 0 }}>{renderCard(second)}</View>
           </Animated.View>
         )}
         {top !== undefined && (
@@ -154,7 +154,7 @@ export function SwipeDeck<T>({
               { transform: [{ translateX: pan.x }, { translateY: pan.y }, { rotate }] },
             ]}
           >
-            <View style={{ width: cardWidth, flex: 1 }}>
+            <View style={{ width: cardWidth, flex: 1, minHeight: 0 }}>
               {renderCard(top)}
               <Animated.View style={[styles.stamp, styles.stampLike, { opacity: likeOpacity }]}>
                 <Text style={[styles.stampText, { color: '#10312B' }]}>{rightLabel}</Text>
@@ -186,8 +186,8 @@ export function SwipeDeck<T>({
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1 },
-  deck: { flex: 1 },
+  root: { flex: 1, minHeight: 0 },
+  deck: { height: 460, maxHeight: '68%', minHeight: 240, overflow: 'hidden' },
   layer: { ...StyleSheet.absoluteFill, alignItems: 'center' },
   actions: { flexDirection: 'row', justifyContent: 'center', paddingVertical: 12 },
   actionBtn: { flex: 1, maxWidth: 200, marginHorizontal: 6 },

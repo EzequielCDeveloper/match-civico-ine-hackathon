@@ -57,3 +57,21 @@ export const fetchCandidatoByID = async (id: number): Promise<Candidato> => {
   const { data } = await apiClient.get<Candidato>(`/api/v1/candidatos/${id}`);
   return data;
 };
+
+export interface MatchCandidato {
+  id_anonimo: number;
+  nombre_candidato: string;
+  partido_coalicion: string;
+  cargo: string;
+  propuesta_1: string;
+  propuesta_2: string;
+  etiquetas: Record<string, number>;
+}
+
+export const fetchParaMatch = async (entidad: string): Promise<MatchCandidato[]> => {
+  const { data } = await apiClient.get<{ items: MatchCandidato[] }>(
+    '/api/v1/candidatos/para-match',
+    { params: { entidad } }
+  );
+  return data.items ?? [];
+};

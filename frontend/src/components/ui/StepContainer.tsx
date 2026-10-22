@@ -26,6 +26,7 @@ const styles = StyleSheet.create({
   },
   inner: {
     flex: 1,
+    minHeight: 0,
     width: '100%',
     maxWidth: 480,
     paddingHorizontal: 16,
@@ -47,6 +48,7 @@ const styles = StyleSheet.create({
   },
   body: {
     flex: 1,
+    minHeight: 0,
     marginTop: 6,
   },
 });

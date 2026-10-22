@@ -13,13 +13,13 @@ export const CandidatosResumenStep: React.FC = () => {
 
   return (
     <StepContainer
-      title="Candidaturas Seleccionadas"
-      subtitle={`${liked.length} candidaturas marcadas con interés`}
+      title="Quienes más coinciden"
+      subtitle="Nombre y partido, después de comparar propuestas a ciegas"
     >
       <ScrollView contentContainerStyle={{ paddingBottom: 16 }}>
         {liked.length === 0 ? (
           <Card style={styles.emptyCard}>
-            <Text style={styles.empty}>No marcaste ninguna candidatura en esta ronda.</Text>
+            <Text style={styles.empty}>No hubo suficientes propuestas para comparar.</Text>
             <Text style={styles.emptySub}>
               Puedes continuar para ver el reporte general o reiniciar el proceso al final.
             </Text>
@@ -28,7 +28,10 @@ export const CandidatosResumenStep: React.FC = () => {
           liked.map((c) => (
             <Card key={c.id} style={styles.candidateCard}>
               <View style={styles.bullet} />
-              <Text style={styles.name}>{c.nombre}</Text>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.name}>{c.nombre}</Text>
+                {c.partido ? <Text style={styles.party}>{c.partido}</Text> : null}
+              </View>
             </Card>
           ))
         )}
@@ -72,5 +75,6 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   name: { fontSize: 15, fontWeight: '700', color: '#1F2937' },
+  party: { fontSize: 13, color: '#691C32', marginTop: 2 },
   btn: { marginTop: 12 },
 });
