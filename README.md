@@ -59,6 +59,7 @@ La base de datos SQLite ya está modelada, creada y sembrada con los datos ofici
 - **4,584 candidatos** federales (Presidencia, Senadurías y Diputaciones) con escolaridad, estatus de título, historial y propuestas.
 - **32 entidades federativas** con estadísticas de participación y abstencionismo general y juvenil (18 a 29 años).
 - **300 distritos electorales federales**.
+- **75,240 etiquetas** de propuestas (`candidatos_etiquetas`) para el árbol de decisión del módulo de Luis. Cómo se generaron y cómo regenerarlas: [`docs/etiquetado_candidatos.md`](docs/etiquetado_candidatos.md).
 
 ### Convención de Prefijos (No-Colisión)
 Todas las tablas creadas o modificadas **deben** llevar el prefijo del módulo:

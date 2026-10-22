@@ -28,10 +28,6 @@ type Candidato struct {
 	Propuesta1          string `json:"propuesta_1"`
 	Propuesta2          string `json:"propuesta_2"`
 	PropuestaGenero     string `json:"propuesta_genero"`
-	Redes               string `json:"redes"`
-	PaginaWeb           string `json:"pagina_web"`
-	CorreoElectronico   string `json:"correo_electronico"`
-	Telefono            string `json:"telefono"`
 	TienePropuestas     bool   `json:"tiene_propuestas"`
 }
 
