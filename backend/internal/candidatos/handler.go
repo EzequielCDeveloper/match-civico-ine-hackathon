@@ -93,8 +93,7 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 			municipio, num_lista_o_formula, tipo_candidato, estatus, edad, sexo,
 			escolaridad, estatus_escolaridad, tiene_titulo, estudios, cursos,
 			historia_profesional, trayectoria_politica, motivo_cargo_publico,
-			propuesta_1, propuesta_2, propuesta_genero, redes, pagina_web,
-			correo_electronico, telefono, tiene_propuestas
+			propuesta_1, propuesta_2, propuesta_genero, tiene_propuestas
 		FROM candidatos_candidatos
 		` + whereClause + `
 		ORDER BY id_anonimo ASC
@@ -119,8 +118,7 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 			&c.Municipio, &c.NumListaOFormula, &c.TipoCandidato, &c.Estatus, &c.Edad, &c.Sexo,
 			&c.Escolaridad, &c.EstatusEscolaridad, &tieneTituloInt, &c.Estudios, &c.Cursos,
 			&c.HistoriaProfesional, &c.TrayectoriaPolitica, &c.MotivoCargoPublico,
-			&c.Propuesta1, &c.Propuesta2, &c.PropuestaGenero, &c.Redes, &c.PaginaWeb,
-			&c.CorreoElectronico, &c.Telefono, &tienePropuestasInt,
+			&c.Propuesta1, &c.Propuesta2, &c.PropuestaGenero, &tienePropuestasInt,
 		)
 		if err != nil {
 			common.RespondError(w, http.StatusInternalServerError, "Error scanning candidate: "+err.Error())
@@ -153,8 +151,7 @@ func (h *Handler) GetByID(w http.ResponseWriter, r *http.Request) {
 			municipio, num_lista_o_formula, tipo_candidato, estatus, edad, sexo,
 			escolaridad, estatus_escolaridad, tiene_titulo, estudios, cursos,
 			historia_profesional, trayectoria_politica, motivo_cargo_publico,
-			propuesta_1, propuesta_2, propuesta_genero, redes, pagina_web,
-			correo_electronico, telefono, tiene_propuestas
+			propuesta_1, propuesta_2, propuesta_genero, tiene_propuestas
 		FROM candidatos_candidatos
 		WHERE id_anonimo = ?
 	`
@@ -168,8 +165,7 @@ func (h *Handler) GetByID(w http.ResponseWriter, r *http.Request) {
 		&c.Municipio, &c.NumListaOFormula, &c.TipoCandidato, &c.Estatus, &c.Edad, &c.Sexo,
 		&c.Escolaridad, &c.EstatusEscolaridad, &tieneTituloInt, &c.Estudios, &c.Cursos,
 		&c.HistoriaProfesional, &c.TrayectoriaPolitica, &c.MotivoCargoPublico,
-		&c.Propuesta1, &c.Propuesta2, &c.PropuestaGenero, &c.Redes, &c.PaginaWeb,
-		&c.CorreoElectronico, &c.Telefono, &tienePropuestasInt,
+		&c.Propuesta1, &c.Propuesta2, &c.PropuestaGenero, &tienePropuestasInt,
 	)
 
 	if err == sql.ErrNoRows {
