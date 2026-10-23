@@ -91,6 +91,22 @@ curl -s "http://localhost:8080/api/v1/candidatos?cargo=PRESIDENCIA&limit=2"
 
 ---
 
+### `GET /api/v1/candidatos/boleta`
+Devuelve una sola boleta para el match: propietarias con propuestas, etiquetas por texto y la similitud entre esas propuestas. No incluye correo, teléfono, redes ni página web.
+
+**Parámetros:**
+- `entidad` *(string)*: nombre del estado, con o sin acentos. No hace falta para `PRESIDENCIA`.
+- `distrito` *(int)*: número de distrito federal. Solo se usa con `DIPUTACION_MR`.
+- `cargo` *(string)*: `DIPUTACION_MR`, `SENADO_MR` o `PRESIDENCIA`.
+
+```bash
+curl -s "http://localhost:8080/api/v1/candidatos/boleta?entidad=Jalisco&distrito=10&cargo=DIPUTACION_MR"
+```
+
+La respuesta trae `cargo`, `candidatos` (nombre, partido, escolaridad, trayectoria, concreción y si la propuesta corresponde al cargo), `propuestas` (`id` como `1539-1`, texto corto y etiquetas), `similitud` y `sin_propuestas`.
+
+---
+
 ### `GET /api/v1/candidatos/{id}`
 Obtiene el detalle completo de una candidatura por su `id_anonimo`.
 

@@ -1,22 +1,24 @@
 #!/usr/bin/env python3
 """
-Etiqueta las propuestas de los candidatos propietarios con un modelo System One
-(POST /v1/systemone: Decider local, Mercury Decide, Jev...) y llena candidatos_etiquetas.
+Etiqueta cada texto de propuesta por separado (propuesta_1, propuesta_2 y
+propuesta_genero) con un modelo System One y llena candidatos_propuesta_etiquetas.
+También guarda un extracto legible en propuesta_*_corta.
 
-Las respuestas crudas se guardan en backend/data/candidatos_etiquetas_raw.jsonl. Es reanudable:
-los candidatos que ya están ahí para la versión actual de la taxonomía no se vuelven a pedir.
-Correrlo después de init_sqlite.py solo recarga la tabla desde ese archivo.
+propuesta_genero no se clasifica en los 21 ejes: solo recibe enfoque_genero,
+concreción y si corresponde al cargo.
+
+Las respuestas crudas van a backend/data/candidatos_etiquetas_raw.jsonl.
+Es reanudable: un texto ya guardado para esta versión de la taxonomía no se vuelve a pedir.
 
 Uso:
-  python3 backend/scripts/etiquetado/etiquetar.py                  # Decider en localhost:8000
-  python3 backend/scripts/etiquetado/etiquetar.py --limit 5        # prueba corta
-  ETIQUETADO_API_KEY=... python3 backend/scripts/etiquetado/etiquetar.py \
-      --url https://openrouter.ai/api/v1/systemone --model inception/mercury-decide:free --workers 1
+  python3 backend/scripts/etiquetado/etiquetar.py
+  python3 backend/scripts/etiquetado/etiquetar.py --limit 6
 """
 
 import argparse
 import json
 import os
+import re
 import sqlite3
 import sys
 import time
@@ -29,52 +31,119 @@ TAXONOMIA = os.path.join(os.path.dirname(__file__), "taxonomia.json")
 RAW_PATH = os.path.join(ROOT, "backend/data/candidatos_etiquetas_raw.jsonl")
 DB_PATHS = [os.path.join(ROOT, "db/matchcivico.db"), os.path.join(ROOT, "backend/data/matchcivico.db")]
 
-CREATE_TABLE = """
-CREATE TABLE IF NOT EXISTS candidatos_etiquetas (
+VACIOS = ("", "sin captura", "sin dato", "no aplica")
+COLUMNAS_CORTA = {1: "propuesta_1_corta", 2: "propuesta_2_corta", 3: "propuesta_genero_corta"}
+
+SCHEMA = """
+CREATE TABLE IF NOT EXISTS candidatos_propuesta_etiquetas (
     id_anonimo INTEGER NOT NULL,
+    propuesta INTEGER NOT NULL,
     etiqueta TEXT NOT NULL,
     peso REAL NOT NULL,
-    PRIMARY KEY (id_anonimo, etiqueta)
+    PRIMARY KEY (id_anonimo, propuesta, etiqueta)
 );
-CREATE INDEX IF NOT EXISTS idx_candidatos_etiquetas_etiqueta ON candidatos_etiquetas(etiqueta);
+CREATE INDEX IF NOT EXISTS idx_propuesta_etiquetas_etiqueta
+    ON candidatos_propuesta_etiquetas(etiqueta);
 """
 
 
-def build_questions(tax):
-    q = {e["id"]: {"type": "noul", "instructions": e["instructions"]} for e in tax["ejes"]}
-    for e in tax["enfoques"]:
-        q[e["id"]] = {"type": "choice", "instructions": e["instructions"], "criteria": e["criteria"]}
-    for t in tax["transversales"]:
-        q[t["id"]] = {k: t[k] for k in ("type", "instructions", "criteria") if k in t}
-    return q
+def texto_util(valor):
+    texto = (valor or "").strip()
+    if texto.lower() in VACIOS:
+        return ""
+    return texto
 
 
-def pending_candidates(db_path, done):
-    conn = sqlite3.connect(db_path)
-    rows = conn.execute("""
-        SELECT id_anonimo, cargo, propuesta_1, propuesta_2
+def legible(texto, limite=500):
+    """Quita las mayúsculas sostenidas y corta en la última oración que quepa."""
+    plano = re.sub(r"\s+", " ", texto).strip()
+    letras = [c for c in plano if c.isalpha()]
+    mayusculas = [c for c in letras if c.isupper()]
+    if len(letras) > 20 and len(mayusculas) / len(letras) > 0.7:
+        plano = plano.lower()
+        plano = re.sub(r"(^|[.!?]\s+)([a-záéíóúüñ])", lambda m: m.group(1) + m.group(2).upper(), plano)
+    if len(plano) <= limite:
+        return plano
+    corte = plano.rfind(".", 0, limite)
+    if corte < 80:
+        corte = plano.rfind(" ", 0, limite)
+    return plano[:corte].rstrip() + "…"
+
+
+def preguntas_de(tax, numero):
+    if numero == 3:
+        bloques = [tax["enfoque_genero"], *tax["transversales"]]
+    else:
+        bloques = [*tax["ejes"], *tax["enfoques"], *tax["transversales"]]
+    out = {}
+    for bloque in bloques:
+        pregunta = {"type": bloque.get("type", "choice" if "criteria" in bloque and not bloque["id"].startswith("eje_") else "noul"),
+                    "instructions": bloque["instructions"]}
+        if bloque["id"].startswith("eje_"):
+            pregunta = {"type": "noul", "instructions": bloque["instructions"]}
+        elif "criteria" in bloque and bloque.get("type") != "score":
+            pregunta = {"type": "choice", "instructions": bloque["instructions"], "criteria": bloque["criteria"]}
+        elif bloque.get("type") == "score":
+            pregunta = {"type": "score", "instructions": bloque["instructions"], "criteria": bloque["criteria"]}
+        elif bloque.get("type") == "noul":
+            pregunta = {"type": "noul", "instructions": bloque["instructions"]}
+        out[bloque["id"]] = pregunta
+    return out
+
+
+def asegurar_columnas(conn):
+    conn.executescript(SCHEMA)
+    existentes = {row[1] for row in conn.execute("PRAGMA table_info(candidatos_candidatos)")}
+    for columna in COLUMNAS_CORTA.values():
+        if columna not in existentes:
+            conn.execute(f"ALTER TABLE candidatos_candidatos ADD COLUMN {columna} TEXT")
+
+
+def guardar_extractos(conn):
+    filas = conn.execute("""
+        SELECT id_anonimo, propuesta_1, propuesta_2, propuesta_genero
         FROM candidatos_candidatos
         WHERE tipo_candidato = 'Persona Propietaria'
-          AND (trim(coalesce(propuesta_1, '')) <> '' OR trim(coalesce(propuesta_2, '')) <> '')
+    """).fetchall()
+    for cid, p1, p2, genero in filas:
+        cortos = [legible(texto_util(p)) for p in (p1, p2, genero)]
+        conn.execute("""
+            UPDATE candidatos_candidatos
+            SET propuesta_1_corta = ?, propuesta_2_corta = ?, propuesta_genero_corta = ?
+            WHERE id_anonimo = ?
+        """, (*cortos, cid))
+
+
+def textos_pendientes(db_path, hechos):
+    conn = sqlite3.connect(db_path)
+    rows = conn.execute("""
+        SELECT id_anonimo, cargo, propuesta_1, propuesta_2, propuesta_genero
+        FROM candidatos_candidatos
+        WHERE tipo_candidato = 'Persona Propietaria'
         ORDER BY id_anonimo
     """).fetchall()
     conn.close()
-    return [r for r in rows if r[0] not in done]
+    pendientes = []
+    for cid, cargo, p1, p2, genero in rows:
+        for numero, valor in ((1, p1), (2, p2), (3, genero)):
+            texto = texto_util(valor)
+            if texto and (cid, numero) not in hechos:
+                pendientes.append((cid, numero, cargo or "", texto))
+    return pendientes
 
 
-def load_raw(version):
-    """Last stored answers per candidate for this taxonomy version."""
-    answers = {}
+def cargar_crudo(version):
+    hechos = {}
     if os.path.exists(RAW_PATH):
         with open(RAW_PATH, encoding="utf-8") as f:
             for line in f:
                 rec = json.loads(line)
-                if rec["taxonomia_version"] == version:
-                    answers[rec["id_anonimo"]] = rec["answers"]
-    return answers
+                if rec.get("taxonomia_version") == version and "propuesta" in rec:
+                    hechos[(rec["id_anonimo"], rec["propuesta"])] = rec["answers"]
+    return hechos
 
 
-def call(url, model, api_key, state, questions, retries=5):
+def llamar(url, model, api_key, state, questions, retries=5):
     body = json.dumps({"model": model, "state": state, "questions": questions}).encode()
     headers = {"Content-Type": "application/json"}
     if api_key:
@@ -88,96 +157,109 @@ def call(url, model, api_key, state, questions, retries=5):
             if e.code not in (429, 500, 502, 503) or attempt == retries - 1:
                 raise RuntimeError(f"HTTP {e.code}: {e.read().decode(errors='replace')[:300]}") from e
             wait = float(e.headers.get("Retry-After") or 2 ** attempt)
-        except (urllib.error.URLError, TimeoutError) as e:
+        except (urllib.error.URLError, TimeoutError):
             if attempt == retries - 1:
                 raise
             wait = 2 ** attempt
         time.sleep(wait)
 
 
-def weights(tax, answers):
-    """Raw answers -> {etiqueta: peso 0..1}."""
+def pesos(tax, numero, answers):
     out = {}
-    for e in tax["ejes"]:
-        out[e["id"]] = answers[e["id"]]["noul"]
-    for e in tax["enfoques"]:
-        p_eje = answers[e["eje"]]["noul"]
-        for opcion, p in answers[e["id"]]["probabilities"].items():
-            if opcion != "no_aplica":
-                out[f"{e['id']}.{opcion}"] = p_eje * p
-    for t in tax["transversales"]:
-        a = answers[t["id"]]
-        if t["type"] == "noul":
-            out[t["id"]] = a["noul"]
-        elif t["type"] == "score":
-            out[t["id"]] = a["score"] / (len(t["criteria"]) - 1)
+    if numero != 3:
+        for eje in tax["ejes"]:
+            out[eje["id"]] = answers[eje["id"]]["noul"]
+        for enfoque in tax["enfoques"]:
+            probabilidad_eje = answers[enfoque["eje"]]["noul"]
+            for opcion, probabilidad in answers[enfoque["id"]]["probabilities"].items():
+                if opcion != "no_aplica":
+                    out[f"{enfoque['id']}.{opcion}"] = probabilidad_eje * probabilidad
+    else:
+        for opcion, probabilidad in answers["enfoque_genero"]["probabilities"].items():
+            out[f"enfoque_genero.{opcion}"] = probabilidad
+    for transversal in tax["transversales"]:
+        respuesta = answers[transversal["id"]]
+        if transversal["type"] == "noul":
+            out[transversal["id"]] = respuesta["noul"]
+        elif transversal["type"] == "score":
+            out[transversal["id"]] = respuesta["score"] / (len(transversal["criteria"]) - 1)
     return out
 
 
-def load_table(tax, raw):
-    rows = [(cid, etiqueta, round(peso, 4)) for cid, ans in raw.items() for etiqueta, peso in weights(tax, ans).items()]
+def cargar_tabla(tax, hechos):
+    filas = []
+    for (cid, numero), answers in hechos.items():
+        for etiqueta, peso in pesos(tax, numero, answers).items():
+            filas.append((cid, numero, etiqueta, round(peso, 4)))
     for db_path in DB_PATHS:
         if not os.path.exists(db_path):
             continue
         conn = sqlite3.connect(db_path)
-        conn.executescript(CREATE_TABLE)
-        conn.execute("DELETE FROM candidatos_etiquetas")
-        conn.executemany("INSERT INTO candidatos_etiquetas (id_anonimo, etiqueta, peso) VALUES (?, ?, ?)", rows)
+        asegurar_columnas(conn)
+        guardar_extractos(conn)
+        conn.execute("DELETE FROM candidatos_propuesta_etiquetas")
+        conn.executemany("""
+            INSERT INTO candidatos_propuesta_etiquetas (id_anonimo, propuesta, etiqueta, peso)
+            VALUES (?, ?, ?, ?)
+        """, filas)
         conn.commit()
         conn.close()
-        print(f"  {db_path}: {len(raw)} candidatos, {len(rows)} etiquetas")
+        print(f"  {db_path}: {len(hechos)} textos, {len(filas)} etiquetas")
 
 
 def main():
-    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--url", default="http://127.0.0.1:8000/v1/systemone")
-    ap.add_argument("--model", default="decider")
-    ap.add_argument("--workers", type=int, default=4)
-    ap.add_argument("--limit", type=int, default=0, help="máximo de candidatos nuevos a etiquetar (0 = todos)")
-    args = ap.parse_args()
+    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument("--url", default="http://127.0.0.1:8000/v1/systemone")
+    parser.add_argument("--model", default="decider")
+    parser.add_argument("--workers", type=int, default=2)
+    parser.add_argument("--limit", type=int, default=0, help="máximo de textos nuevos (0 = todos)")
+    args = parser.parse_args()
     api_key = os.environ.get("ETIQUETADO_API_KEY")
 
     with open(TAXONOMIA, encoding="utf-8") as f:
         tax = json.load(f)
     version = tax["version"]
-    questions = build_questions(tax)
-    raw = load_raw(version)
-
-    todo = pending_candidates(DB_PATHS[0], set(raw))
+    juegos = {1: preguntas_de(tax, 1), 3: preguntas_de(tax, 3)}
+    juegos[2] = juegos[1]
+    hechos = cargar_crudo(version)
+    pendientes = textos_pendientes(DB_PATHS[0], set(hechos))
     if args.limit:
-        todo = todo[:args.limit]
-    print(f"Taxonomía v{version}: {len(questions)} preguntas | ya etiquetados: {len(raw)} | pendientes: {len(todo)}")
+        pendientes = pendientes[:args.limit]
+    print(f"Taxonomía v{version}: {len(juegos[1])} preguntas por propuesta, "
+          f"{len(juegos[3])} por género | listos: {len(hechos)} | pendientes: {len(pendientes)}", flush=True)
 
     errores = 0
-    if todo:
-        t0 = time.time()
+    if pendientes:
+        inicio = time.time()
         os.makedirs(os.path.dirname(RAW_PATH), exist_ok=True)
-        with open(RAW_PATH, "a", encoding="utf-8") as out, ThreadPoolExecutor(args.workers) as ex:
-            futs = {
-                ex.submit(call, args.url, args.model, api_key,
-                          {"cargo": cargo, "propuesta_1": p1 or "", "propuesta_2": p2 or ""}, questions): cid
-                for cid, cargo, p1, p2 in todo
+        with open(RAW_PATH, "a", encoding="utf-8") as salida, ThreadPoolExecutor(args.workers) as pool:
+            futuros = {
+                pool.submit(llamar, args.url, args.model, api_key,
+                            {"cargo": cargo, "texto": texto}, juegos[numero]): (cid, numero)
+                for cid, numero, cargo, texto in pendientes
             }
-            for n, fut in enumerate(as_completed(futs), 1):
-                cid = futs[fut]
+            for n, futuro in enumerate(as_completed(futuros), 1):
+                cid, numero = futuros[futuro]
                 try:
-                    answers = fut.result()
-                except Exception as e:
+                    answers = futuro.result()
+                except Exception as exc:
                     errores += 1
-                    print(f"  error en #{cid}: {e}", file=sys.stderr)
+                    print(f"  error en #{cid} propuesta {numero}: {exc}", file=sys.stderr)
                     continue
-                raw[cid] = answers
-                out.write(json.dumps({"id_anonimo": cid, "taxonomia_version": version, "modelo": args.model,
-                                      "answers": answers}, ensure_ascii=False) + "\n")
-                out.flush()
-                if n % 50 == 0 or n == len(todo):
-                    rate = (time.time() - t0) / n
-                    print(f"  {n}/{len(todo)}  {rate:.2f}s/cand  faltan ~{rate * (len(todo) - n) / 60:.0f} min", flush=True)
+                hechos[(cid, numero)] = answers
+                salida.write(json.dumps({
+                    "id_anonimo": cid, "propuesta": numero, "taxonomia_version": version,
+                    "modelo": args.model, "answers": answers,
+                }, ensure_ascii=False) + "\n")
+                salida.flush()
+                if n % 50 == 0 or n == len(pendientes):
+                    ritmo = (time.time() - inicio) / n
+                    print(f"  {n}/{len(pendientes)}  {ritmo:.2f}s/texto  faltan ~{ritmo * (len(pendientes) - n) / 60:.0f} min", flush=True)
 
-    print("Cargando candidatos_etiquetas:")
-    load_table(tax, raw)
+    print("Cargando candidatos_propuesta_etiquetas:", flush=True)
+    cargar_tabla(tax, hechos)
     if errores:
-        print(f"{errores} candidatos fallaron; vuelve a correr el script para reintentarlos.", file=sys.stderr)
+        print(f"{errores} textos fallaron; vuelve a correr el script para reintentarlos.", file=sys.stderr)
         sys.exit(1)
 
 

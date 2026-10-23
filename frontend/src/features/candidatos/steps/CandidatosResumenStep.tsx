@@ -4,77 +4,83 @@ import { StepContainer } from '../../../components/ui/StepContainer';
 import { Card } from '../../../components/ui/Card';
 import { Button } from '../../../components/ui/Button';
 import { useAnswer, useFlow } from '../../../flow';
-import { CandidatosLikedAnswer } from '../types';
 
-// Luis — step 2: summary of the candidates the user liked.
+interface Fila {
+  id: number;
+  nombre: string;
+  partido: string;
+  afinidad: number;
+  razones: string;
+  avisos: string[];
+  propuestas: string[];
+  escolaridad: string;
+  trayectoria: string;
+}
+
+interface Resultado {
+  cargo: string;
+  empate: boolean;
+  filas: Fila[];
+  sinPropuestas: { nombre_candidato: string; partido_coalicion: string }[];
+}
+
 export const CandidatosResumenStep: React.FC = () => {
   const { next } = useFlow();
-  const liked = useAnswer<CandidatosLikedAnswer>('candidatos.liked') ?? [];
+  const resultado = useAnswer<Resultado>('candidatos.resultado');
+  const filas = resultado?.filas ?? [];
 
   return (
     <StepContainer
-      title="Quienes más coinciden"
-      subtitle="Nombre y partido, después de comparar propuestas a ciegas"
+      title={resultado?.empate ? 'Hay un empate' : 'Quien más coincide'}
+      subtitle={resultado?.cargo ?? 'Resultado de la boleta'}
     >
       <ScrollView contentContainerStyle={{ paddingBottom: 16 }}>
-        {liked.length === 0 ? (
-          <Card style={styles.emptyCard}>
-            <Text style={styles.empty}>No hubo suficientes propuestas para comparar.</Text>
-            <Text style={styles.emptySub}>
-              Puedes continuar para ver el reporte general o reiniciar el proceso al final.
-            </Text>
+        {resultado?.empate ? (
+          <Text style={styles.empate}>Las respuestas no alcanzan para separar a una sola candidatura. Estas son las más cercanas.</Text>
+        ) : null}
+        {filas.map((fila, indice) => (
+          <Card key={fila.id} style={indice === 0 ? styles.primera : undefined}>
+            <Text style={styles.puesto}>{indice + 1}</Text>
+            <Text style={styles.nombre}>{fila.nombre}</Text>
+            <Text style={styles.partido}>{fila.partido}</Text>
+            <Text style={styles.afinidad}>{Math.round(fila.afinidad * 100)}% de afinidad</Text>
+            <Text style={styles.razon}>{fila.razones}</Text>
+            {fila.avisos.map((aviso) => (
+              <Text key={aviso} style={styles.aviso}>{aviso}</Text>
+            ))}
+            {fila.escolaridad ? <Text style={styles.dato}>Escolaridad: {fila.escolaridad}</Text> : null}
+            {fila.trayectoria ? <Text style={styles.dato}>{fila.trayectoria}</Text> : null}
+            {fila.propuestas.map((texto) => (
+              <Text key={texto.slice(0, 40)} style={styles.propuesta}>{texto}</Text>
+            ))}
           </Card>
-        ) : (
-          liked.map((c) => (
-            <Card key={c.id} style={styles.candidateCard}>
-              <View style={styles.bullet} />
-              <View style={{ flex: 1 }}>
-                <Text style={styles.name}>{c.nombre}</Text>
-                {c.partido ? <Text style={styles.party}>{c.partido}</Text> : null}
-              </View>
-            </Card>
-          ))
-        )}
+        ))}
+        {(resultado?.sinPropuestas ?? []).length > 0 ? (
+          <View style={{ marginTop: 8 }}>
+            <Text style={styles.aparte}>No registraron propuestas</Text>
+            {resultado!.sinPropuestas.map((persona) => (
+              <Text key={persona.nombre_candidato} style={styles.dato}>
+                {persona.nombre_candidato} · {persona.partido_coalicion}
+              </Text>
+            ))}
+          </View>
+        ) : null}
       </ScrollView>
-      <Button title="Continuar al Cierre ›" onPress={next} style={styles.btn} />
+      <Button title="Continuar al cierre ›" onPress={next} style={{ marginTop: 12 }} />
     </StepContainer>
   );
 };
 
 const styles = StyleSheet.create({
-  emptyCard: {
-    padding: 20,
-    alignItems: 'center',
-    borderTopWidth: 3,
-    borderTopColor: '#BC955C',
-  },
-  empty: {
-    color: '#4B5563',
-    fontSize: 15,
-    fontWeight: '600',
-    textAlign: 'center',
-  },
-  emptySub: {
-    color: '#9CA3AF',
-    fontSize: 13,
-    textAlign: 'center',
-    marginTop: 6,
-  },
-  candidateCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginVertical: 4,
-    borderLeftWidth: 4,
-    borderLeftColor: '#9F2241', // Guinda oficial
-  },
-  bullet: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: '#BC955C',
-    marginRight: 12,
-  },
-  name: { fontSize: 15, fontWeight: '700', color: '#1F2937' },
-  party: { fontSize: 13, color: '#691C32', marginTop: 2 },
-  btn: { marginTop: 12 },
+  empate: { color: '#92400E', marginBottom: 8, lineHeight: 20 },
+  primera: { borderWidth: 1, borderColor: '#9F2241' },
+  puesto: { color: '#BC955C', fontWeight: '800', fontSize: 12 },
+  nombre: { fontSize: 16, fontWeight: '800', color: '#1F2937', marginTop: 2 },
+  partido: { color: '#691C32', fontWeight: '600', marginTop: 2 },
+  afinidad: { marginTop: 6, fontWeight: '700', color: '#111827' },
+  razon: { marginTop: 4, color: '#374151', lineHeight: 20 },
+  aviso: { marginTop: 4, color: '#9A3412' },
+  dato: { marginTop: 6, color: '#4B5563', lineHeight: 18 },
+  propuesta: { marginTop: 8, color: '#1F2937', lineHeight: 20 },
+  aparte: { fontWeight: '800', color: '#6B7280', marginBottom: 4 },
 });

@@ -1,5 +1,5 @@
 import React from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { Badge } from '../../../components/ui/Badge';
 import { Card } from '../../../components/ui/Card';
 
@@ -13,18 +13,16 @@ export const PropuestaCard: React.FC<PropuestaCardProps> = ({ tema, texto }) => 
   return (
     <Card style={styles.container}>
       <View style={styles.topAccent} />
-      <ScrollView style={styles.content} contentContainerStyle={styles.contentInner}>
+      <View style={styles.content}>
         <Badge label={tema} variant="info" />
         <Text style={styles.texto}>{texto}</Text>
-      </ScrollView>
+      </View>
     </Card>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-    minHeight: 0,
     marginVertical: 6,
     padding: 0,
     overflow: 'hidden',
@@ -36,10 +34,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#9F2241',
   },
   content: {
-    flex: 1,
-    minHeight: 0,
-  },
-  contentInner: {
     padding: 16,
   },
   texto: {

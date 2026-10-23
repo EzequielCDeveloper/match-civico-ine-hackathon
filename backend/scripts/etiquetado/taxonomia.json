@@ -1,37 +1,124 @@
 {
-  "version": 2,
-  "descripcion": "Etiquetas de propuestas para el árbol de decisión del módulo candidatos. Cada entrada es una pregunta del formato /v1/systemone (noul, choice o score).",
+  "version": 3,
+  "descripcion": "Etiquetas por texto de propuesta. propuesta 1 y 2 usan ejes y enfoques; propuesta_genero solo usa enfoque_genero.",
   "state": {
-    "campos": ["cargo", "propuesta_1", "propuesta_2"],
-    "nota": "propuesta_genero se excluye: el INE la exige a todas las candidaturas y marcaría el eje de género en casi todos los casos."
+    "campos": [
+      "cargo",
+      "texto"
+    ]
   },
   "ejes": [
-    {"id": "eje_seguridad", "etiqueta": "Seguridad", "instructions": "¿Alguna propuesta en `propuesta_1` o `propuesta_2` trata sobre seguridad pública, delitos, violencia o policía?"},
-    {"id": "eje_salud", "etiqueta": "Salud", "instructions": "¿Alguna propuesta en `propuesta_1` o `propuesta_2` trata sobre salud, hospitales, clínicas o medicamentos?"},
-    {"id": "eje_educacion", "etiqueta": "Educación", "instructions": "¿Alguna propuesta en `propuesta_1` o `propuesta_2` trata sobre educación, escuelas, maestros o becas?"},
-    {"id": "eje_economia", "etiqueta": "Empleo y economía", "instructions": "¿Alguna propuesta en `propuesta_1` o `propuesta_2` trata sobre empleo, salarios, negocios, inversión o impuestos?"},
-    {"id": "eje_ambiente", "etiqueta": "Agua y medio ambiente", "instructions": "¿Alguna propuesta en `propuesta_1` o `propuesta_2` trata sobre agua, medio ambiente, contaminación o cambio climático?"},
-    {"id": "eje_mujeres", "etiqueta": "Mujeres e igualdad de género", "instructions": "¿Alguna propuesta en `propuesta_1` o `propuesta_2` trata sobre derechos de las mujeres, igualdad de género o violencia contra las mujeres?"},
-    {"id": "eje_juventud", "etiqueta": "Juventud", "instructions": "¿Alguna propuesta en `propuesta_1` o `propuesta_2` está dirigida específicamente a personas jóvenes?"},
-    {"id": "eje_infancia", "etiqueta": "Niñas, niños y adolescentes", "instructions": "¿Alguna propuesta en `propuesta_1` o `propuesta_2` está dirigida a niñas, niños o adolescentes?"},
-    {"id": "eje_adultos_mayores", "etiqueta": "Personas adultas mayores", "instructions": "¿Alguna propuesta en `propuesta_1` o `propuesta_2` está dirigida a personas adultas mayores o pensiones?"},
-    {"id": "eje_discapacidad", "etiqueta": "Discapacidad", "instructions": "¿Alguna propuesta en `propuesta_1` o `propuesta_2` trata sobre personas con discapacidad o accesibilidad?"},
-    {"id": "eje_indigenas", "etiqueta": "Pueblos indígenas y afromexicanos", "instructions": "¿Alguna propuesta en `propuesta_1` o `propuesta_2` trata sobre pueblos indígenas, afromexicanos o sus lenguas?"},
-    {"id": "eje_campo", "etiqueta": "Campo y pesca", "instructions": "¿Alguna propuesta en `propuesta_1` o `propuesta_2` trata sobre el campo, la agricultura, la ganadería o la pesca?"},
-    {"id": "eje_anticorrupcion", "etiqueta": "Anticorrupción y transparencia", "instructions": "¿Alguna propuesta en `propuesta_1` o `propuesta_2` trata sobre combatir la corrupción, la transparencia o la rendición de cuentas?"},
-    {"id": "eje_derechos_humanos", "etiqueta": "Derechos humanos y diversidad", "instructions": "¿Alguna propuesta en `propuesta_1` o `propuesta_2` trata sobre derechos humanos, personas desaparecidas, víctimas o diversidad sexual?"},
-    {"id": "eje_movilidad", "etiqueta": "Movilidad e infraestructura", "instructions": "¿Alguna propuesta en `propuesta_1` o `propuesta_2` trata sobre transporte, carreteras u obra pública?"},
-    {"id": "eje_vivienda", "etiqueta": "Vivienda", "instructions": "¿Alguna propuesta en `propuesta_1` o `propuesta_2` trata sobre vivienda?"},
-    {"id": "eje_energia", "etiqueta": "Energía", "instructions": "¿Alguna propuesta en `propuesta_1` o `propuesta_2` trata sobre electricidad, petróleo, gas o energía?"},
-    {"id": "eje_tecnologia", "etiqueta": "Tecnología y conectividad", "instructions": "¿Alguna propuesta en `propuesta_1` o `propuesta_2` trata sobre internet, tecnología, digitalización o ciencia?"},
-    {"id": "eje_cultura_deporte", "etiqueta": "Cultura y deporte", "instructions": "¿Alguna propuesta en `propuesta_1` o `propuesta_2` trata sobre cultura, arte o deporte?"},
-    {"id": "eje_migracion", "etiqueta": "Migración", "instructions": "¿Alguna propuesta en `propuesta_1` o `propuesta_2` trata sobre migrantes o personas mexicanas en el extranjero?"},
-    {"id": "eje_animales", "etiqueta": "Bienestar animal", "instructions": "¿Alguna propuesta en `propuesta_1` o `propuesta_2` trata sobre protección o bienestar de los animales?"}
+    {
+      "id": "eje_seguridad",
+      "etiqueta": "Seguridad",
+      "instructions": "¿El texto en `texto` trata sobre seguridad pública, delitos, violencia o policía?"
+    },
+    {
+      "id": "eje_salud",
+      "etiqueta": "Salud",
+      "instructions": "¿El texto en `texto` trata sobre salud, hospitales, clínicas o medicamentos?"
+    },
+    {
+      "id": "eje_educacion",
+      "etiqueta": "Educación",
+      "instructions": "¿El texto en `texto` trata sobre educación, escuelas, maestros o becas?"
+    },
+    {
+      "id": "eje_economia",
+      "etiqueta": "Empleo y economía",
+      "instructions": "¿El texto en `texto` trata sobre empleo, salarios, negocios, inversión o impuestos?"
+    },
+    {
+      "id": "eje_ambiente",
+      "etiqueta": "Agua y medio ambiente",
+      "instructions": "¿El texto en `texto` trata sobre agua, medio ambiente, contaminación o cambio climático?"
+    },
+    {
+      "id": "eje_mujeres",
+      "etiqueta": "Mujeres e igualdad de género",
+      "instructions": "¿El texto en `texto` trata sobre derechos de las mujeres, igualdad de género o violencia contra las mujeres?"
+    },
+    {
+      "id": "eje_juventud",
+      "etiqueta": "Juventud",
+      "instructions": "¿El texto en `texto` está dirigido específicamente a personas jóvenes?"
+    },
+    {
+      "id": "eje_infancia",
+      "etiqueta": "Niñas, niños y adolescentes",
+      "instructions": "¿El texto en `texto` está dirigido a niñas, niños o adolescentes?"
+    },
+    {
+      "id": "eje_adultos_mayores",
+      "etiqueta": "Personas adultas mayores",
+      "instructions": "¿El texto en `texto` está dirigido a personas adultas mayores o pensiones?"
+    },
+    {
+      "id": "eje_discapacidad",
+      "etiqueta": "Discapacidad",
+      "instructions": "¿El texto en `texto` trata sobre personas con discapacidad o accesibilidad?"
+    },
+    {
+      "id": "eje_indigenas",
+      "etiqueta": "Pueblos indígenas y afromexicanos",
+      "instructions": "¿El texto en `texto` trata sobre pueblos indígenas, afromexicanos o sus lenguas?"
+    },
+    {
+      "id": "eje_campo",
+      "etiqueta": "Campo y pesca",
+      "instructions": "¿El texto en `texto` trata sobre el campo, la agricultura, la ganadería o la pesca?"
+    },
+    {
+      "id": "eje_anticorrupcion",
+      "etiqueta": "Anticorrupción y transparencia",
+      "instructions": "¿El texto en `texto` trata sobre combatir la corrupción, la transparencia o la rendición de cuentas?"
+    },
+    {
+      "id": "eje_derechos_humanos",
+      "etiqueta": "Derechos humanos y diversidad",
+      "instructions": "¿El texto en `texto` trata sobre derechos humanos, personas desaparecidas, víctimas o diversidad sexual?"
+    },
+    {
+      "id": "eje_movilidad",
+      "etiqueta": "Movilidad e infraestructura",
+      "instructions": "¿El texto en `texto` trata sobre transporte, carreteras u obra pública?"
+    },
+    {
+      "id": "eje_vivienda",
+      "etiqueta": "Vivienda",
+      "instructions": "¿El texto en `texto` trata sobre vivienda?"
+    },
+    {
+      "id": "eje_energia",
+      "etiqueta": "Energía",
+      "instructions": "¿El texto en `texto` trata sobre electricidad, petróleo, gas o energía?"
+    },
+    {
+      "id": "eje_tecnologia",
+      "etiqueta": "Tecnología y conectividad",
+      "instructions": "¿El texto en `texto` trata sobre internet, tecnología, digitalización o ciencia?"
+    },
+    {
+      "id": "eje_cultura_deporte",
+      "etiqueta": "Cultura y deporte",
+      "instructions": "¿El texto en `texto` trata sobre cultura, arte o deporte?"
+    },
+    {
+      "id": "eje_migracion",
+      "etiqueta": "Migración",
+      "instructions": "¿El texto en `texto` trata sobre migrantes o personas mexicanas en el extranjero?"
+    },
+    {
+      "id": "eje_animales",
+      "etiqueta": "Bienestar animal",
+      "instructions": "¿El texto en `texto` trata sobre protección o bienestar de los animales?"
+    }
   ],
   "enfoques": [
     {
-      "id": "enfoque_seguridad", "eje": "eje_seguridad",
-      "instructions": "¿Cuál es el enfoque principal de las propuestas de seguridad en `propuesta_1` y `propuesta_2`?",
+      "id": "enfoque_seguridad",
+      "eje": "eje_seguridad",
+      "instructions": "¿Cuál es el enfoque principal de la propuesta de seguridad en `texto`?",
       "criteria": {
         "castigo": "Aumentar penas o crear nuevos delitos",
         "prevencion": "Atender causas sociales y prevenir la violencia",
@@ -41,8 +128,9 @@
       }
     },
     {
-      "id": "enfoque_salud", "eje": "eje_salud",
-      "instructions": "¿Cuál es el enfoque principal de las propuestas de salud en `propuesta_1` y `propuesta_2`?",
+      "id": "enfoque_salud",
+      "eje": "eje_salud",
+      "instructions": "¿Cuál es el enfoque principal de la propuesta de salud en `texto`?",
       "criteria": {
         "medicamentos": "Abasto o producción de medicamentos",
         "infraestructura": "Construir o equipar hospitales y clínicas",
@@ -52,8 +140,9 @@
       }
     },
     {
-      "id": "enfoque_educacion", "eje": "eje_educacion",
-      "instructions": "¿Cuál es el enfoque principal de las propuestas de educación en `propuesta_1` y `propuesta_2`?",
+      "id": "enfoque_educacion",
+      "eje": "eje_educacion",
+      "instructions": "¿Cuál es el enfoque principal de la propuesta de educación en `texto`?",
       "criteria": {
         "becas": "Becas o apoyos económicos a estudiantes",
         "infraestructura": "Construir o mejorar escuelas",
@@ -63,8 +152,9 @@
       }
     },
     {
-      "id": "enfoque_economia", "eje": "eje_economia",
-      "instructions": "¿Cuál es el enfoque principal de las propuestas económicas en `propuesta_1` y `propuesta_2`?",
+      "id": "enfoque_economia",
+      "eje": "eje_economia",
+      "instructions": "¿Cuál es el enfoque principal de las propuestas económicas en `texto`?",
       "criteria": {
         "emprendimiento": "Apoyos a pequeños negocios o emprendimiento",
         "derechos_laborales": "Salarios, prestaciones o derechos de los trabajadores",
@@ -75,8 +165,9 @@
       }
     },
     {
-      "id": "enfoque_ambiente", "eje": "eje_ambiente",
-      "instructions": "¿Cuál es el enfoque principal de las propuestas ambientales en `propuesta_1` y `propuesta_2`?",
+      "id": "enfoque_ambiente",
+      "eje": "eje_ambiente",
+      "instructions": "¿Cuál es el enfoque principal de las propuestas ambientales en `texto`?",
       "criteria": {
         "agua": "Acceso, abasto o regulación del agua",
         "ecosistemas": "Proteger bosques, mares o biodiversidad",
@@ -88,8 +179,10 @@
   ],
   "transversales": [
     {
-      "id": "concrecion", "type": "score", "etiqueta": "Concreción",
-      "instructions": "¿Qué tan concretas y accionables son las propuestas en `propuesta_1` y `propuesta_2`?",
+      "id": "concrecion",
+      "type": "score",
+      "etiqueta": "Concreción",
+      "instructions": "¿Qué tan concreto y accionable es el texto en `texto`?",
       "criteria": [
         "Frases genéricas sin una acción clara",
         "Acción identificable pero sin detalle",
@@ -97,8 +190,22 @@
       ]
     },
     {
-      "id": "competencia_cargo", "type": "noul", "etiqueta": "Acorde al cargo",
-      "instructions": "¿Las propuestas en `propuesta_1` y `propuesta_2` son acciones que puede realizar alguien en el `cargo` indicado? Un legislador federal hace leyes, aprueba el presupuesto y fiscaliza; no construye obras ni opera programas directamente."
+      "id": "competencia_cargo",
+      "type": "noul",
+      "etiqueta": "Acorde al cargo",
+      "instructions": "¿El texto en `texto` describe acciones que puede realizar alguien en el `cargo` indicado? Un legislador federal hace leyes, aprueba el presupuesto y fiscaliza; no construye obras ni opera programas directamente."
     }
-  ]
+  ],
+  "enfoque_genero": {
+    "id": "enfoque_genero",
+    "instructions": "¿Cuál es el enfoque principal del texto en `texto` sobre las mujeres o la igualdad de género?",
+    "criteria": {
+      "violencia": "Violencia contra las mujeres: delitos, refugios, alertas o protección",
+      "autonomia": "Autonomía económica: empleo, salarios, créditos o patrimonio de las mujeres",
+      "cuidados": "Cuidados: estancias, trabajo de cuidados o corresponsabilidad",
+      "paridad": "Paridad y participación política de las mujeres",
+      "salud": "Salud de las mujeres o derechos reproductivos",
+      "generica": "Menciona a las mujeres o la igualdad sin proponer una acción concreta"
+    }
+  }
 }

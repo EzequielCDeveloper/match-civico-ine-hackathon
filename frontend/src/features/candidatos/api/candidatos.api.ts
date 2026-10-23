@@ -68,6 +68,51 @@ export interface MatchCandidato {
   etiquetas: Record<string, number>;
 }
 
+export interface PropuestaBoleta {
+  id: string;
+  id_anonimo: number;
+  texto: string;
+  etiquetas: Record<string, number>;
+}
+
+export interface CandidatoBoleta {
+  id_anonimo: number;
+  nombre_candidato: string;
+  partido_coalicion: string;
+  escolaridad: string;
+  trayectoria_politica: string;
+  concrecion: number;
+  competencia_cargo: number;
+}
+
+export interface BoletaResponse {
+  cargo: string;
+  candidatos: CandidatoBoleta[];
+  propuestas: PropuestaBoleta[];
+  similitud: Record<string, Record<string, number>>;
+  sin_propuestas: { nombre_candidato: string; partido_coalicion: string }[];
+}
+
+export const fetchBoleta = async (
+  entidad: string,
+  distrito: number,
+  cargo: 'DIPUTACION_MR' | 'SENADO_MR' | 'PRESIDENCIA'
+): Promise<BoletaResponse> => {
+  const { data } = await apiClient.get<BoletaResponse>('/api/v1/candidatos/boleta', {
+    params: { entidad, distrito, cargo },
+  });
+  return data;
+};
+
+export const fetchDistritos = async (
+  entidadId: number
+): Promise<{ distrito_id: number; distrito_nombre: string }[]> => {
+  const { data } = await apiClient.get<{ distritos: { distrito_id: number; distrito_nombre: string }[] }>(
+    `/api/v1/votantes/entidades/${entidadId}`
+  );
+  return data.distritos ?? [];
+};
+
 export const fetchParaMatch = async (entidad: string): Promise<MatchCandidato[]> => {
   const { data } = await apiClient.get<{ items: MatchCandidato[] }>(
     '/api/v1/candidatos/para-match',

@@ -221,7 +221,15 @@ Metas para la diputación de mayoría:
 | La candidatura verdadera queda entre las dos primeras | 95 % o más |
 | Tarjetas promedio | 10 o menos |
 
-El mismo simulador sirve para comparar el recorrido actual contra el nuevo. Es un buen número para la presentación: "el recorrido anterior acertaba X %, el nuevo acierta Y %".
+Medición del 22 de octubre, con las etiquetas por propuesta y la similitud por boleta, sobre las 281 boletas de diputación de mayoría que tienen al menos dos candidaturas con propuestas (798 casos, 15 % de respuestas al azar):
+
+| Métrica | Resultado | Meta |
+| :--- | :--- | :--- |
+| La primera del resultado es la candidatura verdadera | 95.0 % | 80 % |
+| La candidatura verdadera queda entre las dos primeras | 99.5 % | 95 % |
+| Tarjetas promedio | 5.7 | 10 o menos |
+
+El simulador es `backend/scripts/etiquetado/simular_match.py`.
 
 ---
 
