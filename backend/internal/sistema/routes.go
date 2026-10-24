@@ -7,7 +7,7 @@ import (
 )
 
 // RegisterRoutes registers endpoints for the sistema module.
-// Assigned to: Juan (Reset de info app, Exportar info a PDF, Mantenimiento).
+// Assigned to: Juan (Reset de info app, Exportar info a PDF, Auditoría de BD y Resolución de conflictos).
 func RegisterRoutes(r chi.Router, db *sql.DB) {
 	h := NewHandler(db)
 
@@ -15,5 +15,8 @@ func RegisterRoutes(r chi.Router, db *sql.DB) {
 		r.Get("/status", h.Status)
 		r.Post("/reset", h.ResetInfo)
 		r.Post("/exportar-pdf", h.ExportarPDF)
+		r.Get("/exportar-pdf/descargar", h.DescargarPDF)
+		r.Get("/auditoria", h.Auditoria)
+		r.Post("/fusion/resolver", h.ResolverFusion)
 	})
 }
