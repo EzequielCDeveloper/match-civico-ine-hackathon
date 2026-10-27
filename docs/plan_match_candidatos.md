@@ -41,6 +41,8 @@ Cinco momentos. Todo el cálculo sigue en el teléfono; las respuestas no se man
 
 ### 3.1. Elegir la boleta
 
+El recorrido que quedó en la app ya no pide elegir una boleta. Encadena diputación, senado y presidencia y muestra las tres juntas. Ese cambio está en [`plan_tres_boletas.md`](plan_tres_boletas.md). Lo de abajo es el diseño anterior, de una boleta a la vez.
+
 1. Estado: se reutiliza la respuesta de `votantes.perfil` (Ezequiel).
 2. **Distrito**, paso nuevo dentro de candidatos. La lista sale de `GET /api/v1/votantes/entidades/{id}`, que ya trae los distritos con su cabecera ("10 - Zapopan"). Esto es usar la API, no importar código de otro módulo.
 3. Boleta a comparar: diputación del distrito (por defecto, la más acotada), senaduría del estado o presidencia. Al terminar una boleta se ofrece seguir con la siguiente.

@@ -47,14 +47,16 @@ En el motor ese número solo desempata. Si las etiquetas ya dicen que dos propue
 
 El código del teléfono está en [`frontend/src/features/candidatos/match/motor.ts`](../frontend/src/features/candidatos/match/motor.ts). El mismo cálculo, para medirlo, está en [`motor.py`](../backend/scripts/etiquetado/motor.py).
 
-1. La persona elige estado (paso de Ezequiel), distrito y boleta: diputación de su distrito, senaduría de su estado o presidencia. La representación proporcional no entra.
-2. Marca hasta tres temas. No eliminan a nadie: solo suben la prioridad de esas tarjetas.
-3. Cada tarjeta es una propuesta real, sin nombre ni partido. Hay tres respuestas: me convence, me da igual, no me convence. A veces son dos propuestas del mismo tema y distinto enfoque, y hay que elegir una.
-4. La siguiente tarjeta es la que más reduce la duda sobre quién va adelante.
-5. Cuando una candidatura pasa de 0.70 y le saca al menos 0.25 a la segunda, y ya hubo 5 tarjetas, se muestra otra propuesta suya. Si no convence, el recorrido sigue. El tope es 12 tarjetas.
-6. El resultado ordena a las candidaturas de esa boleta con un porcentaje, dice en cuántas propuestas hubo coincidencia y avisa si el texto es poco concreto o promete algo que ese cargo no hace. Si la diferencia entre las dos primeras es menor a 0.10, se dice que hay empate.
+1. La persona elige estado (paso de Ezequiel) y distrito. No elige boleta. La representación proporcional no entra.
+2. Marca hasta tres temas. No eliminan a nadie: solo suben la prioridad de esas tarjetas. Esos temas valen para las tres boletas.
+3. Las tarjetas van en tres bloques seguidos: diputación del distrito, senado del estado y presidencia. Cada bloque tiene su propia creencia. Cada tarjeta es una propuesta real, sin nombre ni partido, y el título dice el cargo. Hay tres respuestas: me convence, me da igual, no me convence. A veces son dos propuestas del mismo tema y distinto enfoque, y hay que elegir una.
+4. La siguiente tarjeta es la que más reduce la duda sobre quién va adelante en el bloque actual.
+5. Cuando una candidatura pasa de 0.70 y le saca al menos 0.25 a la segunda, y ya hubo 5 tarjetas, se muestra otra propuesta suya. Si no convence, el recorrido sigue. El tope es 12 tarjetas por bloque. Si una boleta tiene menos de dos candidaturas con propuestas, ese bloque se salta y el resultado lo dice.
+6. Al cerrar presidencia hay un solo resultado con tres bloques. Cada uno ordena a las candidaturas de esa boleta con un porcentaje, dice en cuántas propuestas hubo coincidencia y avisa si el texto es poco concreto o promete algo que ese cargo no hace. Si la diferencia entre las dos primeras es menor a 0.10, se dice que hay empate.
 
-`GET /api/v1/candidatos/boleta?entidad=Jalisco&distrito=10&cargo=DIPUTACION_MR` entrega esa boleta. No incluye correo, teléfono, redes ni página web.
+En la tarjeta de propuestas el arrastre tiene cuatro direcciones: derecha me convence (o la primera, en un dilema), izquierda no me convence (o la segunda), arriba o abajo me da igual. Los botones hacen lo mismo. El texto no se puede seleccionar, para que el navegador no se quede el gesto. En el paso de temas el gesto es solo horizontal: derecha me importa, izquierda no.
+
+`GET /api/v1/candidatos/boleta` entrega una boleta. El teléfono lo llama tres veces, con `cargo` `DIPUTACION_MR`, `SENADO_MR` y `PRESIDENCIA`. No incluye correo, teléfono, redes ni página web.
 
 ## 4. Medición
 

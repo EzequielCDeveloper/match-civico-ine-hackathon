@@ -10,7 +10,6 @@ interface Eleccion {
   entidadId: number;
   distritoId?: number;
   distritoNombre?: string;
-  cargo?: 'DIPUTACION_MR' | 'SENADO_MR' | 'PRESIDENCIA';
 }
 
 // Luis: el distrito acota la boleta a las personas que sí aparecen en ella.

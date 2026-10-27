@@ -15,7 +15,7 @@ export const PropuestaCard: React.FC<PropuestaCardProps> = ({ tema, texto }) => 
       <View style={styles.topAccent} />
       <View style={styles.content}>
         <Badge label={tema} variant="info" />
-        <Text style={styles.texto}>{texto}</Text>
+        <Text selectable={false} style={styles.texto}>{texto}</Text>
       </View>
     </Card>
   );
@@ -41,5 +41,6 @@ const styles = StyleSheet.create({
     fontSize: 15,
     lineHeight: 22,
     color: '#1F2937',
-  },
+    userSelect: 'none',
+  } as const,
 });

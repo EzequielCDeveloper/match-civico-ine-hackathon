@@ -59,7 +59,7 @@ La base de datos SQLite ya está modelada, creada y sembrada con los datos ofici
 - **4,584 candidatos** federales (Presidencia, Senadurías y Diputaciones) con escolaridad, estatus de título, historial y propuestas.
 - **32 entidades federativas** con estadísticas de participación y abstencionismo general y juvenil (18 a 29 años).
 - **300 distritos electorales federales**.
-- **164,168 etiquetas por propuesta** (`candidatos_propuesta_etiquetas`) y la similitud dentro de cada boleta. Cómo se generaron: [`docs/etiquetado_candidatos.md`](docs/etiquetado_candidatos.md). Qué parte es dato del INE: [`docs/uso_datos_ine.md`](docs/uso_datos_ine.md).
+- **164,168 etiquetas por propuesta** (`candidatos_propuesta_etiquetas`) y la similitud dentro de cada boleta. El recorrido compara la diputación del distrito, el senado del estado y la presidencia, una tras otra, y al final muestra las tres juntas. Cómo se generaron las etiquetas: [`docs/etiquetado_candidatos.md`](docs/etiquetado_candidatos.md). El recorrido de las tres boletas: [`docs/plan_tres_boletas.md`](docs/plan_tres_boletas.md). Qué parte es dato del INE: [`docs/uso_datos_ine.md`](docs/uso_datos_ine.md).
 
 ### Convención de Prefijos (No-Colisión)
 Todas las tablas creadas o modificadas **deben** llevar el prefijo del módulo:

@@ -20,7 +20,7 @@ export const TemasStep: React.FC = () => {
         rightLabel="Me importa"
         renderCard={(tema) => (
           <View style={styles.card}>
-            <Text style={styles.text}>{tema}</Text>
+            <Text selectable={false} style={styles.text}>{tema}</Text>
           </View>
         )}
         onFinish={(results) => {
@@ -57,5 +57,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     padding: 20,
     letterSpacing: -0.3,
-  },
+    userSelect: 'none',
+  } as const,
 });

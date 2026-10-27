@@ -56,3 +56,6 @@ Bienvenido a la documentación técnica oficial de **Match Cívico**, plataforma
 9. [**Plan del match (`plan_match_candidatos.md`)**](plan_match_candidatos.md)
    - Por qué el recorrido anterior no llegaba a una candidatura y cómo se reemplazó.
    - Orden de trabajo y resultado medido.
+
+10. [**Las tres boletas (`plan_tres_boletas.md`)**](plan_tres_boletas.md)
+    - Diputación, senado y presidencia en un solo resultado, sin preguntar cuál boleta.
