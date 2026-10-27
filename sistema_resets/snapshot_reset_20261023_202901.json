@@ -1,0 +1,16 @@
+{
+  "actor": "admin_test",
+  "fecha_backup": "2026-10-24T03:29:01.6373618Z",
+  "ip": "127.0.0.1",
+  "metadata": {
+    "proyecto": "Match Cívico: Comparador Neutral de Candidaturas a Ciegas",
+    "fuente_candidatos": "INE Conóceles - Elecciones Federales 2024",
+    "fuente_participacion": "INE DECEyEC - Conteos Censales de Participación Ciudadana 2024",
+    "total_candidatos": 4584,
+    "total_candidatos_propietarios": 2297,
+    "total_entidades": 32,
+    "total_distritos": 300
+  },
+  "resumen_entidades": 32,
+  "tipo": "backup_previo_reset"
+}
