@@ -100,9 +100,9 @@ export const ParticipacionStep: React.FC = () => {
         <View>
           <VoterStatsCard
             entidad={perfil?.entidad_display || stats.entidad}
-            distritoNombre={stats.distritoNombre}
-            participacionGeneralPct={stats.es_joven ? stats.participacionEsperadaPct : stats.participacion_esperada_pct}
-            abstencionismoGeneralPct={stats.abstencionismoEsperadoPct}
+            distritoNombre={stats.distrito_nombre}
+            participacionGeneralPct={stats.participacion_esperada_pct}
+            abstencionismoGeneralPct={stats.abstencionismo_esperado_pct}
             participacionJovenPct={stats.participacion_joven_pct}
             brechaPts={stats.brecha_abstencionismo_joven_pts}
             participacionGeneroPct={stats.participacion_genero_pct}
