@@ -45,7 +45,7 @@ backend/scripts/init_sqlite.py     (desde la raíz del repo; borra la base y la 
 
 `init_sqlite.py` no vuelve a leer el Excel ni los CSV. Solo lee `datos_unificados.json` y `db/schema.sql`. Por eso un cambio en la fórmula de participación no llega a la aplicación hasta regenerar el JSON y después la base.
 
-Las etiquetas de propuestas (`candidatos_etiquetas`) no vienen del INE. Se calculan después, sobre el texto ya cargado. Ver [`etiquetado_candidatos.md`](etiquetado_candidatos.md).
+Después de la siembra, `etiquetar.py` y `embeddings.py` agregan columnas y tablas que **no vienen del INE**: extractos legibles, etiquetas por propuesta y similitud entre textos. El detalle está en [`etiquetado_candidatos.md`](etiquetado_candidatos.md).
 
 ---
 
@@ -73,8 +73,9 @@ Nombre, correo, teléfono, redes y página web se guardan en la base como vienen
 | `tiene_propuestas` | Verdadero si `PROPUESTA_1`, `PROPUESTA_2` o `PROPUESTA_GENERO` tiene texto distinto de vacío, `sin captura`, `sin dato` o `no aplica`. |
 | `tiene_titulo` | Solo al pasar a SQLite. Vale 1 si `estatus_escolaridad`, ya sin distinguir mayúsculas, es `título`, `titulo`, `cédula profesional` o `cedula profesional`. |
 | `estudios` | Solo en SQLite. Concatena escolaridad y estatus, por ejemplo `Licenciatura (Título)`. |
+| `propuesta_1_corta`, `propuesta_2_corta`, `propuesta_genero_corta` | Solo en SQLite, las llena `etiquetar.py`. El texto del INE, con las mayúsculas sostenidas bajadas y cortado en la última oración antes de 500 caracteres. Es lo que ve la persona en las tarjetas. |
 
-No se resume ni se reescribe el texto de las propuestas en esta etapa. El tono propagandístico sigue en la base. La neutralización prevista es no mostrar partido ni nombre en la primera etapa, y las etiquetas descritas en el otro documento.
+El texto original de Conóceles no se borra. El tono sigue en `propuesta_1`, `propuesta_2` y `propuesta_genero`. La comparación a ciegas usa el extracto y no muestra nombre ni partido hasta el resultado.
 
 ### 3.3. Cifras de control
 
@@ -157,11 +158,13 @@ Ciudad de México queda en la base con 67.98 % de participación general y 59.79
 
 | Tabla | Origen | Qué no copia del JSON |
 | :--- | :--- | :--- |
-| `candidatos_candidatos` | Cada candidatura | Añade `tiene_titulo` y `estudios`. |
+| `candidatos_candidatos` | Cada candidatura | Añade `tiene_titulo`, `estudios` y los tres extractos `propuesta_*_corta`. |
 | `votantes_entidades` | Cada entidad, sin el arreglo de distritos | — |
-| `votantes_distritos` | Cada distrito | El desglose por sexo se guarda como texto JSON. |
+| `votantes_distritos` | Cada distrito | El desglose por sexo se guarda como texto JSON. La app de candidatos usa `distrito_id` y `distrito_nombre` para armar la boleta del distrito. |
 | `votantes_perfiles` | Vacía al sembrar | La llena la app cuando alguien calcula su perfil. |
-| `candidatos_etiquetas` | Vacía al sembrar | La llena `etiquetar.py` a partir de las propuestas. |
+| `candidatos_etiquetas` | Vacía al sembrar | Etiquetas viejas, por candidato, de la taxonomía v2. El match nuevo no las lee. |
+| `candidatos_propuesta_etiquetas` | No está en el JSON | Una fila por texto (`propuesta` 1, 2 o 3) y por etiqueta. La llena `etiquetar.py`. |
+| `db/similitud.db` | No está en el JSON | Pares de propuestas de la misma boleta. Lo escribe `embeddings.py`. No es un dato del INE. |
 | `sistema_resets`, `sistema_exportaciones` | Una fila de siembra en resets | No vienen del INE. |
 
 ---
@@ -171,9 +174,9 @@ Ciudad de México queda en la base con 67.98 % de participación general y 59.79
 - No se usó la serie 2009–2021, así que no hay comparación entre elecciones ni tendencia.
 - No se usó sección, municipio, distrito local, tipo de sección ni referente indígena o afromexicano de los conteos.
 - No se aplicó la fórmula oficial que excluye a `NS`.
-- No se cruzó a cada candidatura con la participación de su distrito dentro de la base. El distrito del candidato y el distrito del censo comparten `entidad` y `distrito_id`, pero ninguna tabla guarda esa unión. La app tendría que hacerla.
-- No se descartó a suplentes ni a quien no escribió propuestas.
-- Los textos de propuesta no se corrigieron: siguen en el caso y la redacción con los que se capturaron en Conóceles.
+- No se cruzó la participación del distrito con la candidatura dentro de una tabla. Comparten `entidad` y `distrito_id`. La app pide los distritos a `GET /api/v1/votantes/entidades/{id}` y las candidaturas a `GET /api/v1/candidatos/boleta`.
+- No se descartó a suplentes ni a quien no escribió propuestas. Quien no tiene texto usable aparece en el resultado bajo "No registraron propuestas".
+- El texto original de Conóceles se conserva. El extracto corto solo normaliza mayúsculas y recorta. No reescribe el contenido.
 
 ---
 
@@ -181,4 +184,4 @@ Ciudad de México queda en la base con 67.98 % de participación general y 59.79
 
 El criterio de evaluación pide aprovechar los datos de la Plataforma CCPC. De esa plataforma, el proyecto usa el corte 2024, agregado a entidad y a distrito federal, con el corte de edad 18 a 29 y el desglose joven por sexo. No usa el historial de elecciones ni el resto de cortes geográficos.
 
-Conóceles no forma parte de la Plataforma CCPC. Entra porque el comparador de candidaturas necesita propuestas y trayectoria. Ese archivo sí trae datos de personas (nombre, correo, teléfono) publicados por el propio sistema. La convocatoria pide trabajar los conteos sin datos personales; esa restricción se cumple en `votantes_entidades` y `votantes_distritos`, y no en `candidatos_candidatos`.
+Conóceles no forma parte de la Plataforma CCPC. Entra porque el comparador necesita las propuestas y la trayectoria. Ese archivo sí trae datos de personas publicados por el propio sistema: nombre, correo, teléfono, redes y página web. La convocatoria pide trabajar los conteos sin datos personales. Esa restricción se cumple en `votantes_entidades` y `votantes_distritos`. En candidaturas, el correo, el teléfono, las redes y la página web se guardan y no salen en `GET /api/v1/candidatos` ni en `GET /api/v1/candidatos/boleta`. El nombre y el partido solo se muestran al final, cuando el recorrido ya terminó.

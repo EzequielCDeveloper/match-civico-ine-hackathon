@@ -40,9 +40,9 @@ export const TemasStep: React.FC = () => {
         rightLabel="Me importa"
         renderCard={(tema) => (
           <View style={styles.card}>
-            <Text style={styles.tagLabel}>Eje Prioritario</Text>
-            <Text style={styles.title}>{tema.label}</Text>
-            <Text style={styles.description}>{tema.descripcion}</Text>
+            <Text selectable={false} style={styles.tagLabel}>Eje Prioritario</Text>
+            <Text selectable={false} style={styles.title}>{tema.label}</Text>
+            <Text selectable={false} style={styles.description}>{tema.descripcion}</Text>
           </View>
         )}
         onFinish={(results) => {
@@ -80,6 +80,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.08,
     shadowRadius: 8,
     elevation: 3,
+    userSelect: 'none',
   },
   tagLabel: {
     fontSize: 12,

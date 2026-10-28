@@ -48,12 +48,19 @@ Bienvenido a la documentación técnica oficial de **Match Cívico**, plataforma
    - Columnas conservadas, agregaciones y la fórmula de participación que usa el código.
    - Diferencia con la fórmula del manual DECEyEC y con lo que pide la convocatoria 2026.
 
-8. [**Etiquetado de propuestas y árbol de decisión (`etiquetado_candidatos.md`)**](etiquetado_candidatos.md)
-   - Taxonomía de ejes, enfoques y concreción del módulo de Luis.
-   - Pesos en `candidatos_etiquetas` y cómo se calculan.
-   - Cómo correr Decider en local y el script de etiquetado.
+8. [**Etiquetado y match por boleta (`etiquetado_candidatos.md`)**](etiquetado_candidatos.md)
+   - Etiquetas por propuesta, incluida la de género, y similitud dentro de la boleta.
+   - Cómo elige la siguiente tarjeta y qué muestra el resultado.
+   - Medición del simulador y cómo correr Decider.
 
-9. [**Auditoría QA: Vectores de Falla (`qa/auditoria_vectores_falla.md`)**](file:///home/anon/uni/cua9/movil/hackathon/docs/qa/auditoria_vectores_falla.md)
-   - Matriz exhaustiva de 20 vectores de falla identificados en los módulos de Luis y Ezequiel.
-   - Resultados de las pruebas de pentesting automatizadas en Go.
-   - Riesgos de seguridad, integridad en SQLite, truncado de datos y fallbacks en UI.
+9. [**Plan del match (`plan_match_candidatos.md`)**](plan_match_candidatos.md)
+   - Por qué el recorrido anterior no llegaba a una candidatura y cómo se reemplazó.
+   - Orden de trabajo y resultado medido.
+
+10. [**Las tres boletas (`plan_tres_boletas.md`)**](plan_tres_boletas.md)
+    - Diputación, senado y presidencia en un solo resultado, sin preguntar cuál boleta.
+
+11. [**Auditoría QA: Vectores de Falla (`qa/auditoria_vectores_falla.md`)**](file:///home/anon/uni/cua9/movil/hackathon/docs/qa/auditoria_vectores_falla.md)
+    - Matriz exhaustiva de 20 vectores de falla identificados en los módulos de Luis y Ezequiel.
+    - Resultados de las pruebas de pentesting automatizadas en Go.
+    - Riesgos de seguridad, integridad en SQLite, truncado de datos y fallbacks en UI.

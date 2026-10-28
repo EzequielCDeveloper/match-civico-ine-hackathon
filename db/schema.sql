@@ -39,7 +39,10 @@ CREATE TABLE IF NOT EXISTS candidatos_candidatos (
     pagina_web TEXT,
     correo_electronico TEXT,
     telefono TEXT,
-    tiene_propuestas INTEGER DEFAULT 0
+    tiene_propuestas INTEGER DEFAULT 0,
+    propuesta_1_corta TEXT,       -- filled by etiquetar.py: readable excerpt, not from the INE file
+    propuesta_2_corta TEXT,
+    propuesta_genero_corta TEXT
 );
 
 CREATE INDEX IF NOT EXISTS idx_candidatos_entidad ON candidatos_candidatos(entidad);
@@ -58,6 +61,19 @@ CREATE TABLE IF NOT EXISTS candidatos_etiquetas (
 );
 
 CREATE INDEX IF NOT EXISTS idx_candidatos_etiquetas_etiqueta ON candidatos_etiquetas(etiqueta);
+
+-- One row per proposal text (1, 2, or 3 = propuesta_genero). Filled by etiquetar.py.
+-- enfoque_genero.* is not multiplied by an eje. The other enfoques are.
+CREATE TABLE IF NOT EXISTS candidatos_propuesta_etiquetas (
+    id_anonimo INTEGER NOT NULL,
+    propuesta INTEGER NOT NULL,
+    etiqueta TEXT NOT NULL,
+    peso REAL NOT NULL,
+    PRIMARY KEY (id_anonimo, propuesta, etiqueta)
+);
+
+CREATE INDEX IF NOT EXISTS idx_propuesta_etiquetas_etiqueta
+    ON candidatos_propuesta_etiquetas(etiqueta);
 
 -- ------------------------------------------------------------------------------
 -- MODULE 2: VOTANTES (Ezequiel)

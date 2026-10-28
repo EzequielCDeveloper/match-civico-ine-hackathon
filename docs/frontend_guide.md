@@ -164,7 +164,7 @@ Las respuestas viven en `answers` (clave -> valor). **Solo el módulo dueño esc
 | `candidatos.liked` | candidatos | `[{ id, nombre }]` |
 
 ### 7.4. Swipe tipo Tinder
-Componente compartido `components/ui/SwipeDeck.tsx` (solo `PanResponder` + `Animated`: funciona en Expo Go y Web, con botones de respaldo para accesibilidad/mouse).
+`components/ui/SwipeDeck.tsx` es izquierda o derecha (los temas). `components/ui/SwipeCuatro.tsx` es las cuatro direcciones (las propuestas: derecha sí, izquierda no, arriba o abajo me da igual). En nativo el gesto es `PanResponder`. En web lo toma un evento de puntero y el texto de la tarjeta no se puede seleccionar, para que el navegador no se quede el arrastre. Los dos dejan botones por si no se puede deslizar.
 ```tsx
 <SwipeDeck
   items={items}

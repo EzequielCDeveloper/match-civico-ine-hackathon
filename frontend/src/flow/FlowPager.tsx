@@ -18,15 +18,24 @@ export const FlowPager: React.FC = () => {
 
   useEffect(() => {
     if (index === shown) return;
+    // On web the slide never returns to 0, so the next step stays clipped off-screen.
+    if (Platform.OS === 'web') {
+      x.setValue(0);
+      setLeaving(null);
+      setShown(index);
+      return;
+    }
     setLeaving({ index: shown, dir: direction });
     setShown(index);
     x.setValue(direction * width);
-    Animated.timing(x, {
+    const animation = Animated.timing(x, {
       toValue: 0,
       duration: DURATION,
       easing: Easing.out(Easing.cubic),
-      useNativeDriver: Platform.OS !== 'web',
-    }).start(() => setLeaving(null));
+      useNativeDriver: true,
+    });
+    animation.start(() => setLeaving(null));
+    return () => animation.stop();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [index]);
 

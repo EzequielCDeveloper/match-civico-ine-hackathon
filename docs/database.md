@@ -63,8 +63,10 @@ Almacena las 4,584 candidaturas federales registradas ante el INE para el proces
 - `idx_candidatos_distrito` (`distrito_id`)
 - `idx_candidatos_titulo` (`tiene_titulo`)
 
+`candidatos_candidatos` también tiene `propuesta_1_corta`, `propuesta_2_corta` y `propuesta_genero_corta`. No vienen del JSON del INE. Las llena `etiquetar.py`: el mismo texto, sin mayúsculas sostenidas y cortado en la última oración antes de 500 caracteres.
+
 ### 3.1.1. Tabla: `candidatos_etiquetas` (Módulo Luis)
-Pesos de 0 a 1 de cada propuesta, usados por el árbol de decisión. El detalle de la taxonomía, el modelo y el script está en [`etiquetado_candidatos.md`](etiquetado_candidatos.md). `init_sqlite.py` crea la tabla vacía; la llena `backend/scripts/etiquetado/etiquetar.py`.
+Pesos de la taxonomía v2, una fila por candidato. El match actual no las lee. El detalle está en [`etiquetado_candidatos.md`](etiquetado_candidatos.md).
 
 | Columna | Tipo SQLite | Descripción |
 | :--- | :--- | :--- |
@@ -73,6 +75,18 @@ Pesos de 0 a 1 de cada propuesta, usados por el árbol de decisión. El detalle 
 | `peso` | `REAL` | De 0 a 1. En un enfoque ya viene multiplicado por la probabilidad de su eje. |
 
 **Índice**: `idx_candidatos_etiquetas_etiqueta` (`etiqueta`).
+
+### 3.1.2. Tabla: `candidatos_propuesta_etiquetas` (Módulo Luis)
+Una fila por texto (`propuesta` 1, 2 o 3 = `propuesta_genero`) y por etiqueta. La llena `etiquetar.py` con la taxonomía v3. `init_sqlite.py` deja la tabla vacía.
+
+| Columna | Tipo SQLite | Descripción |
+| :--- | :--- | :--- |
+| `id_anonimo` | `INTEGER` | Candidato. Parte de la llave primaria. |
+| `propuesta` | `INTEGER` | 1, 2 o 3. |
+| `etiqueta` | `TEXT` | `eje_*`, `enfoque_*.*`, `enfoque_genero.*`, `concrecion` o `competencia_cargo`. |
+| `peso` | `REAL` | De 0 a 1. Los enfoques de tema ya vienen multiplicados por la probabilidad de su eje. Los de género, no. |
+
+La similitud entre propuestas de la misma boleta no está en `matchcivico.db`. Está en `db/similitud.db`, tabla `pares` (`a`, `b`, `similitud`), escrita por `embeddings.py`.
 
 ---
 

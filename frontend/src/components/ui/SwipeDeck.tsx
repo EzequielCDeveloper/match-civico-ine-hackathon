@@ -6,8 +6,9 @@ import React, {
   useRef,
   useState,
 } from 'react';
-import { Animated, PanResponder, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { Animated, PanResponder, Platform, StyleSheet, Text, View, ViewStyle, useWindowDimensions } from 'react-native';
 import { Button } from './Button';
+import { capturar, prepararSeleccionWeb, punto, type Puntero } from './punteroWeb';
 
 export type SwipeDirection = 'left' | 'right';
 export interface SwipeResult<T> {
@@ -92,8 +93,54 @@ export function SwipeDeck<T>({
   const flyOutRef = useRef(flyOut);
   flyOutRef.current = flyOut;
 
+  const activo = useRef<number | null>(null);
+  const origen = useRef({ x: 0, y: 0 });
+
+  useEffect(() => {
+    prepararSeleccionWeb();
+  }, []);
+
+  const alBajar = (e: Puntero) => {
+    if (busy.current) return;
+    const p = punto(e);
+    if (p.button !== 0) return;
+    e.preventDefault?.();
+    activo.current = p.pointerId;
+    origen.current = { x: p.x, y: p.y };
+    capturar(e, p.pointerId);
+  };
+  const alMover = (e: Puntero) => {
+    if (activo.current == null || punto(e).pointerId !== activo.current) return;
+    const p = punto(e);
+    pan.setValue({ x: p.x - origen.current.x, y: p.y - origen.current.y });
+  };
+  const alSoltar = (e: Puntero) => {
+    if (activo.current == null || punto(e).pointerId !== activo.current) return;
+    activo.current = null;
+    const p = punto(e);
+    const dx = p.x - origen.current.x;
+    const dy = p.y - origen.current.y;
+    const limite = thresholdRef.current;
+    if (Math.abs(dx) >= limite && Math.abs(dx) >= Math.abs(dy)) {
+      flyOutRef.current(dx > 0 ? 'right' : 'left');
+    } else {
+      Animated.spring(pan, { toValue: { x: 0, y: 0 }, useNativeDriver: false }).start();
+    }
+  };
+  const punteroWeb =
+    Platform.OS === 'web'
+      ? {
+          dataSet: { swipe: '1' },
+          onPointerDown: alBajar,
+          onPointerMove: alMover,
+          onPointerUp: alSoltar,
+          onPointerCancel: alSoltar,
+        }
+      : null;
+
   const responder = useRef(
     PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
       onMoveShouldSetPanResponder: (_, g) =>
         Math.abs(g.dx) > 6 && Math.abs(g.dx) > Math.abs(g.dy),
       onPanResponderMove: Animated.event([null, { dx: pan.x, dy: pan.y }], {
@@ -142,25 +189,30 @@ export function SwipeDeck<T>({
             pointerEvents="none"
             style={[styles.layer, { transform: [{ scale: nextScale }] }]}
           >
-            <View style={{ width: cardWidth, flex: 1 }}>{renderCard(second)}</View>
+            <View style={{ width: cardWidth, flex: 1, minHeight: 0 }}>{renderCard(second)}</View>
           </Animated.View>
         )}
         {top !== undefined && (
           <Animated.View
             key={keyExtractor(top)}
-            {...responder.panHandlers}
+            {...(Platform.OS === 'web' ? {} : responder.panHandlers)}
             style={[
               styles.layer,
+              sinSeleccion,
               { transform: [{ translateX: pan.x }, { translateY: pan.y }, { rotate }] },
             ]}
           >
-            <View style={{ width: cardWidth, flex: 1 }}>
+            <View
+              collapsable={false}
+              {...punteroWeb}
+              style={[{ width: cardWidth, flex: 1, minHeight: 0 }, sinSeleccion]}
+            >
               {renderCard(top)}
-              <Animated.View style={[styles.stamp, styles.stampLike, { opacity: likeOpacity }]}>
-                <Text style={[styles.stampText, { color: '#10312B' }]}>{rightLabel}</Text>
+              <Animated.View pointerEvents="none" style={[styles.stamp, styles.stampLike, { opacity: likeOpacity }]}>
+                <Text selectable={false} style={[styles.stampText, { color: '#10312B' }]}>{rightLabel}</Text>
               </Animated.View>
-              <Animated.View style={[styles.stamp, styles.stampNope, { opacity: nopeOpacity }]}>
-                <Text style={[styles.stampText, { color: '#9F2241' }]}>{leftLabel}</Text>
+              <Animated.View pointerEvents="none" style={[styles.stamp, styles.stampNope, { opacity: nopeOpacity }]}>
+                <Text selectable={false} style={[styles.stampText, { color: '#9F2241' }]}>{leftLabel}</Text>
               </Animated.View>
             </View>
           </Animated.View>
@@ -185,9 +237,15 @@ export function SwipeDeck<T>({
   );
 }
 
+const sinSeleccion = {
+  userSelect: 'none',
+  WebkitUserSelect: 'none',
+  touchAction: 'none',
+} as unknown as ViewStyle;
+
 const styles = StyleSheet.create({
-  root: { flex: 1 },
-  deck: { flex: 1 },
+  root: { flex: 1, minHeight: 0 },
+  deck: { height: 460, maxHeight: '68%', minHeight: 240, overflow: 'hidden' },
   layer: { ...StyleSheet.absoluteFill, alignItems: 'center' },
   actions: { flexDirection: 'row', justifyContent: 'center', paddingVertical: 12 },
   actionBtn: { flex: 1, maxWidth: 200, marginHorizontal: 6 },
