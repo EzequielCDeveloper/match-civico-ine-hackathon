@@ -54,3 +54,7 @@ bin/
 # Heavy raw datasets (>750MB raw INE dumps; clean data is in backend/data/ and db/matchcivico.db)
 backend/Datos/*
 !backend/Datos/.gitkeep
+
+# Sistema: archivos generados en tiempo de ejecución (snapshots y PDFs)
+sistema_exportaciones/
+sistema_resets/

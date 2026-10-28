@@ -303,3 +303,9 @@ Registra y genera el stub de descarga de reporte consolidado en PDF.
   "generated_at": "2026-10-18T19:35:05Z"
 }
 ```
+
+**Dónde se guardan los archivos:** el PDF se escribe en
+`$SISTEMA_DATA_DIR/sistema_exportaciones/`. Si `SISTEMA_DATA_DIR` no está
+definida se usa el directorio de trabajo del proceso; en pruebas se apunta a
+un directorio temporal. Los snapshots de reset siguen la misma regla con
+`sistema_resets/`.

@@ -8,6 +8,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"reflect"
 	"testing"
 
 	"github.com/go-chi/chi/v5"
@@ -57,7 +58,10 @@ func setupTestDB(t *testing.T) *sql.DB {
 	return db
 }
 
-func setupRouter(db *sql.DB) *chi.Mux {
+func setupRouter(t *testing.T, db *sql.DB) *chi.Mux {
+	t.Helper()
+	// Cada prueba escribe sus exportaciones fuera del árbol de trabajo.
+	t.Setenv("SISTEMA_DATA_DIR", t.TempDir())
 	r := chi.NewRouter()
 	sistema.RegisterRoutes(r, db)
 	return r
@@ -66,7 +70,7 @@ func setupRouter(db *sql.DB) *chi.Mux {
 func Test1_ResetApp(t *testing.T) {
 	db := setupTestDB(t)
 	defer db.Close()
-	r := setupRouter(db)
+	r := setupRouter(t, db)
 
 	reqBody, _ := json.Marshal(sistema.ResetRequest{
 		TipoReset: "PERFILES",
@@ -103,7 +107,7 @@ func Test1_ResetApp(t *testing.T) {
 func Test2_ExportarPDF(t *testing.T) {
 	db := setupTestDB(t)
 	defer db.Close()
-	r := setupRouter(db)
+	r := setupRouter(t, db)
 
 	reqBody, _ := json.Marshal(sistema.ExportarPDFRequest{
 		Modulo:       "candidatos",
@@ -146,7 +150,7 @@ func Test2_ExportarPDF(t *testing.T) {
 func Test3_AuditoriaBaseDatos(t *testing.T) {
 	db := setupTestDB(t)
 	defer db.Close()
-	r := setupRouter(db)
+	r := setupRouter(t, db)
 
 	// Insertar eventos previos
 	_, _ = db.Exec("INSERT INTO sistema_resets (tipo_reset, motivo, usuario_o_sesion) VALUES ('PERFILES', 'Mantenimiento', 'admin')")
@@ -173,7 +177,7 @@ func Test3_AuditoriaBaseDatos(t *testing.T) {
 func Test4_ResolucionConflictosFusion(t *testing.T) {
 	db := setupTestDB(t)
 	defer db.Close()
-	r := setupRouter(db)
+	r := setupRouter(t, db)
 
 	sol := sistema.SolicitudFusion{
 		EntidadID:   "CAND-0884",
@@ -215,7 +219,7 @@ func Test4_ResolucionConflictosFusion(t *testing.T) {
 func Test5_StatusSistema(t *testing.T) {
 	db := setupTestDB(t)
 	defer db.Close()
-	r := setupRouter(db)
+	r := setupRouter(t, db)
 
 	req := httptest.NewRequest(http.MethodGet, "/sistema/status", nil)
 	rec := httptest.NewRecorder()
@@ -235,8 +239,67 @@ func Test5_StatusSistema(t *testing.T) {
 	}
 }
 
-func init() {
-	// Asegurar directorio temporal de exportaciones en pruebas
-	_ = os.MkdirAll(filepath.Join("..", "..", "sistema_exportaciones"), 0755)
-	_ = os.MkdirAll(filepath.Join("..", "..", "sistema_resets"), 0755)
+func nombresEnDirectorio(t *testing.T, dir string) []string {
+	t.Helper()
+	entradas, err := os.ReadDir(dir)
+	if err != nil {
+		t.Fatalf("Error leyendo %s: %v", dir, err)
+	}
+	nombres := make([]string, 0, len(entradas))
+	for _, entrada := range entradas {
+		nombres = append(nombres, entrada.Name())
+	}
+	return nombres
+}
+
+// Test6_ExportacionesSoloBajoSistemaDataDir comprueba que el módulo no escriba
+// nada en el árbol de trabajo: ni al registrar rutas ni al exportar.
+func Test6_ExportacionesSoloBajoSistemaDataDir(t *testing.T) {
+	datos := t.TempDir()
+	t.Setenv("SISTEMA_DATA_DIR", datos)
+
+	db := setupTestDB(t)
+	defer db.Close()
+
+	antes := nombresEnDirectorio(t, ".")
+
+	r := chi.NewRouter()
+	sistema.RegisterRoutes(r, db)
+
+	if despues := nombresEnDirectorio(t, "."); !reflect.DeepEqual(antes, despues) {
+		t.Fatalf("el handler creó archivos en el árbol de trabajo: %v", despues)
+	}
+
+	reqBody, _ := json.Marshal(sistema.ExportarPDFRequest{
+		Modulo: "candidatos",
+		Titulo: "Prueba de aislamiento",
+	})
+	req := httptest.NewRequest(http.MethodPost, "/sistema/exportar-pdf", bytes.NewReader(reqBody))
+	req.Header.Set("Content-Type", "application/json")
+	rec := httptest.NewRecorder()
+	r.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("Esperado 200, obtenido %d: %s", rec.Code, rec.Body.String())
+	}
+
+	archivos, err := os.ReadDir(filepath.Join(datos, "sistema_exportaciones"))
+	if err != nil || len(archivos) != 1 {
+		t.Fatalf("Se esperaba un PDF bajo %s (err=%v, archivos=%v)", datos, err, archivos)
+	}
+
+	reqDescarga := httptest.NewRequest(http.MethodGet, "/sistema/exportar-pdf/descargar?archivo="+archivos[0].Name(), nil)
+	recDescarga := httptest.NewRecorder()
+	r.ServeHTTP(recDescarga, reqDescarga)
+
+	if recDescarga.Code != http.StatusOK {
+		t.Fatalf("Fallo la descarga del archivo exportado: %d", recDescarga.Code)
+	}
+	if !bytes.HasPrefix(recDescarga.Body.Bytes(), []byte("%PDF-1.4")) {
+		t.Errorf("El archivo descargado no es un PDF válido")
+	}
+
+	if despues := nombresEnDirectorio(t, "."); !reflect.DeepEqual(antes, despues) {
+		t.Fatalf("la exportación escribió en el árbol de trabajo: %v", despues)
+	}
 }

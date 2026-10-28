@@ -16,15 +16,26 @@ import (
 )
 
 type Handler struct {
-	db *sql.DB
+	db       *sql.DB
+	dirDatos string
 }
 
+// NewHandler crea el handler del módulo de sistema. Los archivos que genera
+// (snapshots de reset y exportaciones PDF) se escriben bajo SISTEMA_DATA_DIR;
+// si la variable no está definida se usa el directorio de trabajo actual.
 func NewHandler(db *sql.DB) *Handler {
-	_ = os.MkdirAll("sistema_resets", 0755)
-	_ = os.MkdirAll("../sistema_resets", 0755)
-	_ = os.MkdirAll("sistema_exportaciones", 0755)
-	_ = os.MkdirAll("../sistema_exportaciones", 0755)
-	return &Handler{db: db}
+	dirDatos := os.Getenv("SISTEMA_DATA_DIR")
+	if dirDatos == "" {
+		dirDatos = "."
+	}
+	return &Handler{db: db, dirDatos: dirDatos}
+}
+
+// carpeta crea, si hace falta, la subcarpeta de datos y devuelve su ruta.
+func (h *Handler) carpeta(nombre string) string {
+	ruta := filepath.Join(h.dirDatos, nombre)
+	_ = os.MkdirAll(ruta, 0755)
+	return ruta
 }
 
 // 1. ResetInfo handles resetting user profiles or application cache with snapshot backup and database audit.
@@ -46,10 +57,7 @@ func (h *Handler) ResetInfo(w http.ResponseWriter, r *http.Request) {
 
 	// Snapshot previo en sistema_resets/
 	nombreSnapshot := fmt.Sprintf("snapshot_reset_%s.json", time.Now().Format("20060102_150405"))
-	rutaSnapshot := filepath.Join("sistema_resets", nombreSnapshot)
-	if _, err := os.Stat("sistema_resets"); os.IsNotExist(err) {
-		rutaSnapshot = filepath.Join("..", "sistema_resets", nombreSnapshot)
-	}
+	rutaSnapshot := filepath.Join(h.carpeta("sistema_resets"), nombreSnapshot)
 
 	snapshotData := map[string]any{
 		"tipo":         req.TipoReset,
@@ -116,12 +124,7 @@ func (h *Handler) ExportarPDF(w http.ResponseWriter, r *http.Request) {
 	pdfBytes := compilarPDF(req.Titulo, req.Actor, totalCandidatos, totalEntidades, totalPerfiles)
 
 	nombreArchivo := fmt.Sprintf("reporte_%s_%s.pdf", req.Modulo, time.Now().Format("20060102_150405"))
-	carpeta := "sistema_exportaciones"
-	if _, err := os.Stat(carpeta); os.IsNotExist(err) {
-		carpeta = filepath.Join("..", "sistema_exportaciones")
-	}
-	_ = os.MkdirAll(carpeta, 0755)
-	rutaArchivo := filepath.Join(carpeta, nombreArchivo)
+	rutaArchivo := filepath.Join(h.carpeta("sistema_exportaciones"), nombreArchivo)
 	_ = os.WriteFile(rutaArchivo, pdfBytes, 0644)
 
 	docURL := fmt.Sprintf("/api/v1/sistema/exportar-pdf/descargar?archivo=%s", nombreArchivo)
@@ -167,18 +170,13 @@ func (h *Handler) DescargarPDF(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	rutas := []string{
-		filepath.Join("sistema_exportaciones", archivo),
-		filepath.Join("..", "sistema_exportaciones", archivo),
-	}
-	for _, p := range rutas {
-		if data, err := os.ReadFile(p); err == nil {
-			w.Header().Set("Content-Type", "application/pdf")
-			w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s\"", archivo))
-			w.Header().Set("Content-Length", strconv.Itoa(len(data)))
-			_, _ = w.Write(data)
-			return
-		}
+	ruta := filepath.Join(h.carpeta("sistema_exportaciones"), archivo)
+	if data, err := os.ReadFile(ruta); err == nil {
+		w.Header().Set("Content-Type", "application/pdf")
+		w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s\"", archivo))
+		w.Header().Set("Content-Length", strconv.Itoa(len(data)))
+		_, _ = w.Write(data)
+		return
 	}
 
 	common.RespondError(w, http.StatusNotFound, "Archivo PDF no encontrado")
