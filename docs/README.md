@@ -52,3 +52,8 @@ Bienvenido a la documentación técnica oficial de **Match Cívico**, plataforma
    - Taxonomía de ejes, enfoques y concreción del módulo de Luis.
    - Pesos en `candidatos_etiquetas` y cómo se calculan.
    - Cómo correr Decider en local y el script de etiquetado.
+
+9. [**Auditoría QA: Vectores de Falla (`qa/auditoria_vectores_falla.md`)**](file:///home/anon/uni/cua9/movil/hackathon/docs/qa/auditoria_vectores_falla.md)
+   - Matriz exhaustiva de 20 vectores de falla identificados en los módulos de Luis y Ezequiel.
+   - Resultados de las pruebas de pentesting automatizadas en Go.
+   - Riesgos de seguridad, integridad en SQLite, truncado de datos y fallbacks en UI.
