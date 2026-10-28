@@ -1,23 +1,34 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { ActivityIndicator, Text } from 'react-native';
 import { StepContainer } from '../../../components/ui/StepContainer';
 import { SwipeDeck } from '../../../components/ui/SwipeDeck';
 import { Button } from '../../../components/ui/Button';
-import { useFlow } from '../../../flow';
+import { useFlow, useAnswer } from '../../../flow';
 import { useCandidates } from '../hooks/useCandidates';
 import { CandidateCard } from '../components/CandidateCard';
 import { CandidatosLikedAnswer } from '../types';
 
 // Luis — step 1: Tinder-style swipe on candidates (right = me convence).
+// Reads 'votantes.perfil' from flow answers to filter candidates matching the user's entity.
 export const CandidatosSwipeStep: React.FC = () => {
   const { next, setAnswer } = useFlow();
-  // Lazy loading: fetch only 5 candidates on demand
-  const { candidates, loading, error, refresh } = useCandidates({ limit: 5 });
+  const perfil = useAnswer<{ entidad?: string }>('votantes.perfil');
+
+  const filters = useMemo(() => ({
+    limit: 10,
+    ...(perfil?.entidad ? { entidad: perfil.entidad } : {}),
+  }), [perfil?.entidad]);
+
+  const { candidates, loading, error, refresh } = useCandidates(filters);
 
   return (
     <StepContainer
       title="Candidaturas 2024"
-      subtitle="Desliza a la derecha si te convence · Izquierda para descartar"
+      subtitle={
+        perfil?.entidad
+          ? `Candidatos oficiales para ${perfil.entidad} · Desliza a la derecha si te convence`
+          : 'Desliza a la derecha si te convence · Izquierda para descartar'
+      }
     >
       {loading ? (
         <ActivityIndicator size="large" color="#9F2241" style={{ marginTop: 40 }} />
