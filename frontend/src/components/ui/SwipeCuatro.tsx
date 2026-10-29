@@ -11,6 +11,7 @@ interface SwipeCuatroProps {
   izquierda: string;
   arriba: string;
   abajo: string;
+  disabled?: boolean;
 }
 
 const sinSeleccion = {
@@ -27,6 +28,7 @@ export const SwipeCuatro: React.FC<SwipeCuatroProps> = ({
   izquierda,
   arriba,
   abajo,
+  disabled = false,
 }) => {
   const { width, height } = useWindowDimensions();
   const pan = useRef(new Animated.ValueXY()).current;
@@ -36,9 +38,11 @@ export const SwipeCuatro: React.FC<SwipeCuatroProps> = ({
   onSwipeRef.current = onSwipe;
   const sizeRef = useRef({ width, height, umbral });
   sizeRef.current = { width, height, umbral };
+  const disabledRef = useRef(disabled);
+  disabledRef.current = disabled;
 
   const volar = (direccion: DireccionSwipe) => {
-    if (busy.current) return;
+    if (busy.current || disabledRef.current) return;
     busy.current = true;
     const { width: w, height: h } = sizeRef.current;
     const destino = { x: 0, y: 0 };
@@ -66,7 +70,7 @@ export const SwipeCuatro: React.FC<SwipeCuatroProps> = ({
   }, []);
 
   const alBajar = (e: Puntero) => {
-    if (busy.current) return;
+    if (busy.current || disabledRef.current) return;
     const p = punto(e);
     if (p.button !== 0) return;
     e.preventDefault?.();
@@ -75,6 +79,7 @@ export const SwipeCuatro: React.FC<SwipeCuatroProps> = ({
     capturar(e, p.pointerId);
   };
   const alMover = (e: Puntero) => {
+    if (disabledRef.current) return;
     if (activo.current == null || punto(e).pointerId !== activo.current) return;
     const p = punto(e);
     pan.setValue({ x: p.x - origen.current.x, y: p.y - origen.current.y });
@@ -82,6 +87,10 @@ export const SwipeCuatro: React.FC<SwipeCuatroProps> = ({
   const alSoltar = (e: Puntero) => {
     if (activo.current == null || punto(e).pointerId !== activo.current) return;
     activo.current = null;
+    if (disabledRef.current) {
+      Animated.spring(pan, { toValue: { x: 0, y: 0 }, useNativeDriver: false }).start();
+      return;
+    }
     const p = punto(e);
     const dx = p.x - origen.current.x;
     const dy = p.y - origen.current.y;
@@ -106,13 +115,20 @@ export const SwipeCuatro: React.FC<SwipeCuatroProps> = ({
 
   const responder = useRef(
     PanResponder.create({
-      onStartShouldSetPanResponder: () => true,
-      onMoveShouldSetPanResponder: () => true,
+      onStartShouldSetPanResponder: () => !disabledRef.current,
+      onMoveShouldSetPanResponder: () => !disabledRef.current,
       onPanResponderTerminationRequest: () => false,
-      onPanResponderMove: Animated.event([null, { dx: pan.x, dy: pan.y }], {
-        useNativeDriver: false,
-      }),
+      onPanResponderMove: (e, gesto) => {
+        if (disabledRef.current) return;
+        Animated.event([null, { dx: pan.x, dy: pan.y }], {
+          useNativeDriver: false,
+        })(e, gesto);
+      },
       onPanResponderRelease: (_, gesto) => {
+        if (disabledRef.current) {
+          Animated.spring(pan, { toValue: { x: 0, y: 0 }, useNativeDriver: false }).start();
+          return;
+        }
         const horizontal = Math.abs(gesto.dx);
         const vertical = Math.abs(gesto.dy);
         if (Math.max(horizontal, vertical) < sizeRef.current.umbral) {
@@ -129,6 +145,7 @@ export const SwipeCuatro: React.FC<SwipeCuatroProps> = ({
   ).current;
 
   const opacidadHacia = (valor: number, eje: 'x' | 'y') => {
+    if (disabled) return 0;
     const nodo = eje === 'x' ? pan.x : pan.y;
     const negativo = valor < 0;
     return nodo.interpolate({

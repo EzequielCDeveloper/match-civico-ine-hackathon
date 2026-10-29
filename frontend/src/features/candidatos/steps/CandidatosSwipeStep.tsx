@@ -214,6 +214,32 @@ export const CandidatosSwipeStep: React.FC = () => {
     ? siguienteTarjeta(creencia, boleta.propuestas, propuestasDe, embeddings, mostradas, prioridades, yaConfirmo)
     : null;
 
+  const tarjetaKey = tarjeta
+    ? tarjeta.tipo === 'dilema'
+      ? `${tarjeta.a.id}-${tarjeta.b.id}`
+      : tarjeta.propuesta.id
+    : null;
+
+  const [segundosRestantes, setSegundosRestantes] = useState(8);
+
+  useEffect(() => {
+    if (!tarjetaKey) return;
+    setSegundosRestantes(8);
+    const timer = setInterval(() => {
+      setSegundosRestantes((prev) => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => {
+      clearInterval(timer);
+    };
+  }, [tarjetaKey]);
+
   useEffect(() => {
     if (cargando || !boleta || boleta.candidatos.length >= 2) return;
     if (saltado.current === bloque) return;
@@ -248,6 +274,7 @@ export const CandidatosSwipeStep: React.FC = () => {
   }
 
   const contestar = (respuesta: Respuesta) => {
+    if (segundosRestantes > 0) return;
     const siguiente = responderTarjeta(creencia, tarjeta, respuesta, propuestasDe, embeddings);
     const vistas = [...mostradas];
     const historial = [...hechos];
@@ -294,12 +321,14 @@ export const CandidatosSwipeStep: React.FC = () => {
       }
     >
       <SwipeCuatro
-        key={tarjeta.tipo === 'dilema' ? `${tarjeta.a.id}-${tarjeta.b.id}` : tarjeta.propuesta.id}
+        key={tarjetaKey}
+        disabled={segundosRestantes > 0}
         derecha={tarjeta.tipo === 'dilema' ? 'La primera' : 'Me convence'}
         izquierda={tarjeta.tipo === 'dilema' ? 'La segunda' : 'No'}
         arriba="Me da igual"
         abajo="Me da igual"
         onSwipe={(direccion: DireccionSwipe) => {
+          if (segundosRestantes > 0) return;
           if (direccion === 'right') contestar('si');
           else if (direccion === 'left') contestar('no');
           else contestar('igual');
@@ -316,18 +345,70 @@ export const CandidatosSwipeStep: React.FC = () => {
           <PropuestaCard tema={titulo} texto={tarjeta.propuesta.texto} />
         )}
       </SwipeCuatro>
+
+      <View style={styles.temporizadorContenedor}>
+        {segundosRestantes > 0 ? (
+          <View style={styles.bannerTemporizador}>
+            <Text style={styles.textoTemporizador}>
+              ⏱️ Lee la propuesta: podrás responder en{' '}
+              <Text style={styles.segundosDestacados}>{segundosRestantes}s</Text>
+            </Text>
+          </View>
+        ) : (
+          <View style={[styles.bannerTemporizador, styles.bannerListo]}>
+            <Text style={[styles.textoTemporizador, styles.textoListo]}>
+              ✓ Lectura completada. Ya puedes responder o deslizar.
+            </Text>
+          </View>
+        )}
+      </View>
+
       <View style={styles.acciones}>
         {tarjeta.tipo === 'dilema' ? (
           <>
-            <Button title="La primera" onPress={() => contestar('si')} style={styles.boton} />
-            <Button title="Me da igual" variant="secondary" onPress={() => contestar('igual')} style={styles.boton} />
-            <Button title="La segunda" variant="danger" onPress={() => contestar('no')} style={styles.boton} />
+            <Button
+              title="La primera"
+              disabled={segundosRestantes > 0}
+              onPress={() => contestar('si')}
+              style={styles.boton}
+            />
+            <Button
+              title="Me da igual"
+              variant="secondary"
+              disabled={segundosRestantes > 0}
+              onPress={() => contestar('igual')}
+              style={styles.boton}
+            />
+            <Button
+              title="La segunda"
+              variant="danger"
+              disabled={segundosRestantes > 0}
+              onPress={() => contestar('no')}
+              style={styles.boton}
+            />
           </>
         ) : (
           <>
-            <Button title="No me convence" variant="danger" onPress={() => contestar('no')} style={styles.boton} />
-            <Button title="Me da igual" variant="secondary" onPress={() => contestar('igual')} style={styles.boton} />
-            <Button title="Me convence" onPress={() => contestar('si')} style={styles.boton} />
+            <Button
+              title="No me convence"
+              variant="danger"
+              disabled={segundosRestantes > 0}
+              onPress={() => contestar('no')}
+              style={styles.boton}
+            />
+            <Button
+              title="Me da igual"
+              variant="secondary"
+              disabled={segundosRestantes > 0}
+              onPress={() => contestar('igual')}
+              style={styles.boton}
+            />
+            <Button
+              title="Me convence"
+              disabled={segundosRestantes > 0}
+              onPress={() => contestar('si')}
+              style={styles.boton}
+            />
           </>
         )}
       </View>
@@ -338,6 +419,36 @@ export const CandidatosSwipeStep: React.FC = () => {
 const styles = StyleSheet.create({
   nota: { color: '#374151', fontSize: 15, lineHeight: 22, marginTop: 12 },
   marca: { marginTop: 8, fontSize: 12, fontWeight: '800', color: '#691C32', letterSpacing: 0.4 },
-  acciones: { flexDirection: 'row', paddingTop: 8 },
+  temporizadorContenedor: {
+    marginVertical: 8,
+    alignItems: 'center',
+  },
+  bannerTemporizador: {
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#BC955C',
+    backgroundColor: '#FEF3C7',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  bannerListo: {
+    borderColor: '#10B981',
+    backgroundColor: '#ECFDF5',
+  },
+  textoTemporizador: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#8C652E',
+  },
+  segundosDestacados: {
+    fontWeight: '800',
+    color: '#691C32',
+  },
+  textoListo: {
+    color: '#065F46',
+  },
+  acciones: { flexDirection: 'row', paddingTop: 4 },
   boton: { flex: 1, marginHorizontal: 4 },
 });
