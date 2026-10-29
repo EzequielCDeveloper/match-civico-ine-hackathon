@@ -62,6 +62,7 @@ func setupRouter(t *testing.T, db *sql.DB) *chi.Mux {
 	t.Helper()
 	// Cada prueba escribe sus exportaciones fuera del árbol de trabajo.
 	t.Setenv("SISTEMA_DATA_DIR", t.TempDir())
+	t.Setenv("SISTEMA_ADMIN_TOKEN", "test-admin-secret")
 	r := chi.NewRouter()
 	sistema.RegisterRoutes(r, db)
 	return r
@@ -79,6 +80,7 @@ func Test1_ResetApp(t *testing.T) {
 	})
 	req := httptest.NewRequest(http.MethodPost, "/sistema/reset", bytes.NewReader(reqBody))
 	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("X-Admin-Token", "test-admin-secret")
 	rec := httptest.NewRecorder()
 
 	r.ServeHTTP(rec, req)
@@ -157,6 +159,7 @@ func Test3_AuditoriaBaseDatos(t *testing.T) {
 	_, _ = db.Exec("INSERT INTO sistema_exportaciones (formato, modulo_origen, titulo, ruta_archivo) VALUES ('PDF', 'candidatos', 'Reporte 1', 'rep.pdf')")
 
 	req := httptest.NewRequest(http.MethodGet, "/sistema/auditoria", nil)
+	req.Header.Set("X-Admin-Token", "test-admin-secret")
 	rec := httptest.NewRecorder()
 	r.ServeHTTP(rec, req)
 
@@ -196,6 +199,7 @@ func Test4_ResolucionConflictosFusion(t *testing.T) {
 
 	req := httptest.NewRequest(http.MethodPost, "/sistema/fusion/resolver", bytes.NewReader(b))
 	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("X-Admin-Token", "test-admin-secret")
 	rec := httptest.NewRecorder()
 	r.ServeHTTP(rec, req)
 
@@ -303,3 +307,70 @@ func Test6_ExportacionesSoloBajoSistemaDataDir(t *testing.T) {
 		t.Fatalf("la exportación escribió en el árbol de trabajo: %v", despues)
 	}
 }
+
+func TestResetApp_SinToken_Forbidden(t *testing.T) {
+	db := setupTestDB(t)
+	defer db.Close()
+	r := setupRouter(t, db)
+
+	reqBody, _ := json.Marshal(sistema.ResetRequest{TipoReset: "PERFILES"})
+	req := httptest.NewRequest(http.MethodPost, "/sistema/reset", bytes.NewReader(reqBody))
+	req.Header.Set("Content-Type", "application/json")
+	// Sin cabecera X-Admin-Token
+	rec := httptest.NewRecorder()
+	r.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusForbidden {
+		t.Fatalf("Esperado 403 Forbidden sin token admin, obtenido %d", rec.Code)
+	}
+}
+
+func TestDescargarPDF_PathTraversal_Sanitizado(t *testing.T) {
+	db := setupTestDB(t)
+	defer db.Close()
+	r := setupRouter(t, db)
+
+	// Intento de path traversal escapando a la base de datos o sistema
+	req := httptest.NewRequest(http.MethodGet, "/sistema/exportar-pdf/descargar?archivo=../../data/matchcivico.db", nil)
+	rec := httptest.NewRecorder()
+	r.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusNotFound {
+		t.Fatalf("Esperado 404 para path traversal sanitizado, obtenido %d", rec.Code)
+	}
+}
+
+func TestExportarPDF_ConResumen(t *testing.T) {
+	db := setupTestDB(t)
+	defer db.Close()
+	r := setupRouter(t, db)
+
+	reqBody, _ := json.Marshal(sistema.ExportarPDFRequest{
+		Modulo: "candidatos",
+		Titulo: "Reporte con Resumen del Votante",
+		Resumen: &sistema.ResumenVotante{
+			Entidad:        "CIUDAD DE MEXICO",
+			Distrito:       "1 · GAM",
+			TopDiputacion:  "Candidata Diputacion",
+			TopSenado:      "Candidato Senado",
+			TopPresidencia: "Candidata Presidencia",
+		},
+	})
+	req := httptest.NewRequest(http.MethodPost, "/sistema/exportar-pdf", bytes.NewReader(reqBody))
+	req.Header.Set("Content-Type", "application/json")
+	rec := httptest.NewRecorder()
+	r.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("Esperado 200, obtenido %d: %s", rec.Code, rec.Body.String())
+	}
+
+	var resp sistema.ExportarPDFResponse
+	if err := json.Unmarshal(rec.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("Error deserializando respuesta: %v", err)
+	}
+	if resp.TamanoBytes <= 0 {
+		t.Errorf("El tamaño en bytes del PDF con resumen debe ser mayor a 0")
+	}
+}
+

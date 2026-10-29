@@ -21,10 +21,19 @@ export interface ResetResponse {
   timestamp: string;
 }
 
+export interface ResumenVotante {
+  entidad?: string;
+  distrito?: string;
+  top_diputacion?: string;
+  top_senado?: string;
+  top_presidencia?: string;
+}
+
 export interface ExportarPDFPayload {
   modulo: string;
   referencia_id: number;
   titulo?: string;
+  resumen?: ResumenVotante;
 }
 
 export interface ExportarPDFResponse {

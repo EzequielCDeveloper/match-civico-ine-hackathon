@@ -3,20 +3,38 @@ import { StyleSheet, Text, View } from 'react-native';
 import { StepContainer } from '../../../components/ui/StepContainer';
 import { Card } from '../../../components/ui/Card';
 import { Button } from '../../../components/ui/Button';
-import { useFlow } from '../../../flow';
+import { useAnswer, useFlow } from '../../../flow';
 import { useSystem } from '../hooks/useSystem';
 import { SystemActionPanel } from '../components/SystemActionPanel';
 import { fetchAuditoria, resolverFusion, AuditoriaResponse, ResultadoFusion } from '../api/sistema.api';
+import { PerfilAnswer } from '../../votantes/types';
 
 // Juan — final step: Reset de info, exportar a PDF, auditoría de base de datos y resolución de conflictos.
 export const CierreStep: React.FC = () => {
   const { restart } = useFlow();
-  const { resetLoading, exportLoading, lastExport, lastReset, handleReset, handleExportPDF } = useSystem();
+  const perfil = useAnswer<PerfilAnswer>('votantes.perfil');
+  const resultado = useAnswer<any>('candidatos.resultado');
+  const { resetLoading, exportLoading, lastExport, lastReset, handleExportPDF } = useSystem();
+  const isAdmin = process.env.EXPO_PUBLIC_ADMIN === '1';
 
   const [auditoriaData, setAuditoriaData] = useState<AuditoriaResponse | null>(null);
   const [auditLoading, setAuditLoading] = useState<boolean>(false);
   const [fusionData, setFusionData] = useState<ResultadoFusion | null>(null);
   const [fusionLoading, setFusionLoading] = useState<boolean>(false);
+
+  const exportarConResumen = () => {
+    const topDip = resultado?.diputacion?.filas?.[0]?.nombre;
+    const topSen = resultado?.senado?.filas?.[0]?.nombre;
+    const topPres = resultado?.presidencia?.filas?.[0]?.nombre;
+
+    handleExportPDF('candidatos', 1, {
+      entidad: perfil?.entidad_display || perfil?.entidad || '',
+      distrito: perfil?.distrito_nombre ? `${perfil?.distrito_id} · ${perfil?.distrito_nombre}` : '',
+      top_diputacion: topDip || 'No evaluada',
+      top_senado: topSen || 'No evaluada',
+      top_presidencia: topPres || 'No evaluada',
+    }).catch(() => undefined);
+  };
 
   const consultarAuditoriaBD = async () => {
     setAuditLoading(true);
@@ -57,18 +75,12 @@ export const CierreStep: React.FC = () => {
   };
 
   return (
-    <StepContainer title="¡Listo!" subtitle="Módulo Sistema: Exportación, Reset, Auditoría y Fusión">
+    <StepContainer title="¡Listo!" subtitle="Tus resultados cívicos están listos para revisión y descarga">
       <SystemActionPanel
         exportLoading={exportLoading}
         resetLoading={resetLoading}
-        onExport={() => handleExportPDF('candidatos', 1).catch(() => undefined)}
-        onReset={async () => {
-          try {
-            await handleReset('PERFILES', 'Reinicio desde el flujo');
-          } finally {
-            restart();
-          }
-        }}
+        onExport={exportarConResumen}
+        onReset={restart}
       />
 
       {lastExport && (
@@ -87,45 +99,47 @@ export const CierreStep: React.FC = () => {
         </Card>
       )}
 
-      {/* Herramientas adicionales de Sistema y Merge Master (Juan) */}
-      <Card style={styles.adminCard}>
-        <Text style={styles.adminTitle}>Auditoría y Resolución de Conflictos (Juan)</Text>
-        <Text style={styles.adminDesc}>
-          Inspección de logs de base de datos y algoritmos de conciliación de datos.
-        </Text>
-        <View style={styles.btnRow}>
-          <Button
-            title="Consultar Auditoría BD"
-            variant="secondary"
-            onPress={consultarAuditoriaBD}
-            loading={auditLoading}
-            style={styles.adminBtn}
-          />
-          <Button
-            title="Probar Fusión de Conflictos"
-            variant="secondary"
-            onPress={ejecutarResolucionConflictos}
-            loading={fusionLoading}
-            style={styles.adminBtn}
-          />
-        </View>
-
-        {auditoriaData && (
-          <View style={styles.detailsBox}>
-            <Text style={styles.bold}>
-              Auditoría: {auditoriaData.total_resets} resets, {auditoriaData.total_exportaciones} exportaciones
-            </Text>
+      {/* Herramientas adicionales de Sistema y Merge Master (Juan) - Solo Admin */}
+      {isAdmin && (
+        <Card style={styles.adminCard}>
+          <Text style={styles.adminTitle}>Auditoría y Resolución de Conflictos (Juan)</Text>
+          <Text style={styles.adminDesc}>
+            Inspección de logs de base de datos y algoritmos de conciliación de datos.
+          </Text>
+          <View style={styles.btnRow}>
+            <Button
+              title="Consultar Auditoría BD"
+              variant="secondary"
+              onPress={consultarAuditoriaBD}
+              loading={auditLoading}
+              style={styles.adminBtn}
+            />
+            <Button
+              title="Probar Fusión de Conflictos"
+              variant="secondary"
+              onPress={ejecutarResolucionConflictos}
+              loading={fusionLoading}
+              style={styles.adminBtn}
+            />
           </View>
-        )}
 
-        {fusionData && (
-          <View style={styles.detailsBox}>
-            <Text style={styles.bold}>
-              Fusión {fusionData.estado}: {fusionData.total_conflictos} campos resueltos con {fusionData.estrategia}
-            </Text>
-          </View>
-        )}
-      </Card>
+          {auditoriaData && (
+            <View style={styles.detailsBox}>
+              <Text style={styles.bold}>
+                Auditoría: {auditoriaData.total_resets} resets, {auditoriaData.total_exportaciones} exportaciones
+              </Text>
+            </View>
+          )}
+
+          {fusionData && (
+            <View style={styles.detailsBox}>
+              <Text style={styles.bold}>
+                Fusión {fusionData.estado}: {fusionData.total_conflictos} campos resueltos con {fusionData.estrategia}
+              </Text>
+            </View>
+          )}
+        </Card>
+      )}
     </StepContainer>
   );
 };

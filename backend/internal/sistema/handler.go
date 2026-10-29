@@ -38,8 +38,22 @@ func (h *Handler) carpeta(nombre string) string {
 	return ruta
 }
 
+func (h *Handler) verificarAdmin(r *http.Request) bool {
+	tokenEsperado := os.Getenv("SISTEMA_ADMIN_TOKEN")
+	if tokenEsperado == "" {
+		return false
+	}
+	tokenRecibido := r.Header.Get("X-Admin-Token")
+	return tokenRecibido != "" && tokenRecibido == tokenEsperado
+}
+
 // 1. ResetInfo handles resetting user profiles or application cache with snapshot backup and database audit.
 func (h *Handler) ResetInfo(w http.ResponseWriter, r *http.Request) {
+	if !h.verificarAdmin(r) {
+		common.RespondError(w, http.StatusForbidden, "Acceso no autorizado: se requiere token de administrador en X-Admin-Token")
+		return
+	}
+
 	var req ResetRequest
 	_ = json.NewDecoder(r.Body).Decode(&req)
 
@@ -121,7 +135,7 @@ func (h *Handler) ExportarPDF(w http.ResponseWriter, r *http.Request) {
 	_ = h.db.QueryRow("SELECT count(*) FROM votantes_perfiles").Scan(&totalPerfiles)
 
 	// Generar PDF nativo estándar PDF-1.4
-	pdfBytes := compilarPDF(req.Titulo, req.Actor, totalCandidatos, totalEntidades, totalPerfiles)
+	pdfBytes := compilarPDF(req.Titulo, req.Actor, totalCandidatos, totalEntidades, totalPerfiles, req.Resumen)
 
 	nombreArchivo := fmt.Sprintf("reporte_%s_%s.pdf", req.Modulo, time.Now().Format("20060102_150405"))
 	rutaArchivo := filepath.Join(h.carpeta("sistema_exportaciones"), nombreArchivo)
@@ -162,7 +176,7 @@ func (h *Handler) DescargarPDF(w http.ResponseWriter, r *http.Request) {
 		_ = h.db.QueryRow("SELECT count(*) FROM votantes_entidades").Scan(&totalEntidades)
 		_ = h.db.QueryRow("SELECT count(*) FROM votantes_perfiles").Scan(&totalPerfiles)
 
-		pdfBytes := compilarPDF("Reporte Oficial Match Civico", "descarga_directa", totalCandidatos, totalEntidades, totalPerfiles)
+		pdfBytes := compilarPDF("Reporte Oficial Match Civico", "descarga_directa", totalCandidatos, totalEntidades, totalPerfiles, nil)
 		w.Header().Set("Content-Type", "application/pdf")
 		w.Header().Set("Content-Disposition", "attachment; filename=\"reporte_match_civico.pdf\"")
 		w.Header().Set("Content-Length", strconv.Itoa(len(pdfBytes)))
@@ -184,6 +198,11 @@ func (h *Handler) DescargarPDF(w http.ResponseWriter, r *http.Request) {
 
 // 3. Auditoria retrieves audit history from database tables sistema_resets and sistema_exportaciones.
 func (h *Handler) Auditoria(w http.ResponseWriter, r *http.Request) {
+	if !h.verificarAdmin(r) {
+		common.RespondError(w, http.StatusForbidden, "Acceso no autorizado: se requiere token de administrador en X-Admin-Token")
+		return
+	}
+
 	rowsResets, err := h.db.Query(`
 		SELECT id, tipo_reset, COALESCE(motivo, ''), COALESCE(usuario_o_sesion, 'admin'), COALESCE(realizado_en, CURRENT_TIMESTAMP)
 		FROM sistema_resets
@@ -232,6 +251,11 @@ func (h *Handler) Auditoria(w http.ResponseWriter, r *http.Request) {
 
 // 4. ResolverFusion reconciles merge conflicts between conflicting data versions.
 func (h *Handler) ResolverFusion(w http.ResponseWriter, r *http.Request) {
+	if !h.verificarAdmin(r) {
+		common.RespondError(w, http.StatusForbidden, "Acceso no autorizado: se requiere token de administrador en X-Admin-Token")
+		return
+	}
+
 	var sol SolicitudFusion
 	if err := json.NewDecoder(r.Body).Decode(&sol); err != nil {
 		common.RespondError(w, http.StatusBadRequest, "Invalid JSON body: "+err.Error())
@@ -361,7 +385,7 @@ func (h *Handler) Status(w http.ResponseWriter, r *http.Request) {
 	common.RespondJSON(w, http.StatusOK, res)
 }
 
-func compilarPDF(titulo, actor string, totalCandidatos, totalEntidades, totalPerfiles int) []byte {
+func compilarPDF(titulo, actor string, totalCandidatos, totalEntidades, totalPerfiles int, resumen *ResumenVotante) []byte {
 	ahora := time.Now().UTC()
 	var stream bytes.Buffer
 	stream.WriteString("BT\n")
@@ -371,13 +395,34 @@ func compilarPDF(titulo, actor string, totalCandidatos, totalEntidades, totalPer
 	stream.WriteString("/F2 9 Tf\n0 -16 Td\n")
 	stream.WriteString(fmt.Sprintf("(Fecha de emision: %s | Solicitante: %s) Tj\n", ahora.Format("2006-01-02 15:04:05 UTC"), sanitizarASCII(actor)))
 	stream.WriteString("0 -14 Td\n(--------------------------------------------------------------------------------) Tj\n")
-	stream.WriteString("/F1 12 Tf\n0 -22 Td\n(1. RESUMEN DE BASE DE DATOS Y METRICAS DEL SISTEMA) Tj\n")
-	stream.WriteString("/F2 10 Tf\n0 -16 Td\n")
-	stream.WriteString(fmt.Sprintf("(- Total Candidaturas Federales en BD: %d) Tj\n", totalCandidatos))
-	stream.WriteString("0 -14 Td\n")
-	stream.WriteString(fmt.Sprintf("(- Entidades Federativas Registradas: %d) Tj\n", totalEntidades))
-	stream.WriteString("0 -14 Td\n")
-	stream.WriteString(fmt.Sprintf("(- Perfiles Ciudadanos Evaluados: %d) Tj\n", totalPerfiles))
+
+	if resumen != nil {
+		stream.WriteString("/F1 12 Tf\n0 -22 Td\n(1. RESULTADO DE COINCIDENCIAS ELECTORALES DEL CIUDADANO) Tj\n")
+		stream.WriteString("/F2 10 Tf\n0 -16 Td\n")
+		if resumen.Entidad != "" {
+			stream.WriteString(fmt.Sprintf("(- Entidad: %s) Tj\n0 -14 Td\n", sanitizarASCII(resumen.Entidad)))
+		}
+		if resumen.Distrito != "" {
+			stream.WriteString(fmt.Sprintf("(- Distrito Electoral: %s) Tj\n0 -14 Td\n", sanitizarASCII(resumen.Distrito)))
+		}
+		if resumen.TopDiputacion != "" {
+			stream.WriteString(fmt.Sprintf("(- Boleta Diputacion: %s) Tj\n0 -14 Td\n", sanitizarASCII(resumen.TopDiputacion)))
+		}
+		if resumen.TopSenado != "" {
+			stream.WriteString(fmt.Sprintf("(- Boleta Senado: %s) Tj\n0 -14 Td\n", sanitizarASCII(resumen.TopSenado)))
+		}
+		if resumen.TopPresidencia != "" {
+			stream.WriteString(fmt.Sprintf("(- Boleta Presidencia: %s) Tj\n0 -14 Td\n", sanitizarASCII(resumen.TopPresidencia)))
+		}
+	} else {
+		stream.WriteString("/F1 12 Tf\n0 -22 Td\n(1. RESUMEN DE BASE DE DATOS Y METRICAS DEL SISTEMA) Tj\n")
+		stream.WriteString("/F2 10 Tf\n0 -16 Td\n")
+		stream.WriteString(fmt.Sprintf("(- Total Candidaturas Federales en BD: %d) Tj\n", totalCandidatos))
+		stream.WriteString("0 -14 Td\n")
+		stream.WriteString(fmt.Sprintf("(- Entidades Federativas Registradas: %d) Tj\n", totalEntidades))
+		stream.WriteString("0 -14 Td\n")
+		stream.WriteString(fmt.Sprintf("(- Perfiles Ciudadanos Evaluados: %d) Tj\n", totalPerfiles))
+	}
 	stream.WriteString("/F1 12 Tf\n0 -24 Td\n(2. SELLO DE AUDITORIA Y SEGURIDAD) Tj\n")
 	stream.WriteString("/F2 9 Tf\n0 -16 Td\n")
 	stream.WriteString(fmt.Sprintf("(Hash de Integridad: SHA256-%016x) Tj\n", ahora.UnixNano()))

@@ -3,6 +3,7 @@ import {
   SystemStatus,
   ResetResponse,
   ExportarPDFResponse,
+  ResumenVotante,
   fetchSystemStatus,
   executeReset,
   exportarPDF,
@@ -51,13 +52,18 @@ export const useSystem = () => {
     }
   };
 
-  const handleExportPDF = async (modulo: string = 'candidatos', referenciaId: number = 1) => {
+  const handleExportPDF = async (
+    modulo: string = 'candidatos',
+    referenciaId: number = 1,
+    resumen?: ResumenVotante
+  ) => {
     setExportLoading(true);
     try {
       const res = await exportarPDF({
         modulo,
         referencia_id: referenciaId,
         titulo: `Reporte de ${modulo.toUpperCase()}`,
+        resumen,
       });
       setLastExport(res);
       return res;

@@ -19,12 +19,22 @@ type ResetResponse struct {
 	Timestamp          time.Time `json:"timestamp"`
 }
 
+// ResumenVotante contiene el resultado civico del votante para ser plasmado en el PDF.
+type ResumenVotante struct {
+	Entidad        string `json:"entidad,omitempty"`
+	Distrito       string `json:"distrito,omitempty"`
+	TopDiputacion  string `json:"top_diputacion,omitempty"`
+	TopSenado      string `json:"top_senado,omitempty"`
+	TopPresidencia string `json:"top_presidencia,omitempty"`
+}
+
 // ExportarPDFRequest defines payload to generate a PDF export.
 type ExportarPDFRequest struct {
-	Modulo       string `json:"modulo"` // "candidatos" | "votantes" | "sistema"
-	ReferenciaID int    `json:"referencia_id"`
-	Titulo       string `json:"titulo"`
-	Actor        string `json:"actor,omitempty"`
+	Modulo       string          `json:"modulo"` // "candidatos" | "votantes" | "sistema"
+	ReferenciaID int             `json:"referencia_id"`
+	Titulo       string          `json:"titulo"`
+	Actor        string          `json:"actor,omitempty"`
+	Resumen      *ResumenVotante `json:"resumen,omitempty"`
 }
 
 // ExportarPDFResponse returns metadata for the exported document.
