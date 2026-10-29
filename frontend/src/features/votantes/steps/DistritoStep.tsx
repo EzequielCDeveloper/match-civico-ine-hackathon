@@ -3,20 +3,13 @@ import { ActivityIndicator, Text } from 'react-native';
 import { StepContainer } from '../../../components/ui/StepContainer';
 import { ChoiceList } from '../../../components/ui/ChoiceList';
 import { useAnswer, useFlow } from '../../../flow';
-import { fetchDistritos } from '../api/candidatos.api';
+import { fetchEntidadByID, DistritoVotante } from '../api/votantes.api';
+import { PerfilAnswer } from '../types';
 
-interface Eleccion {
-  entidad: string;
-  entidadId: number;
-  distritoId?: number;
-  distritoNombre?: string;
-}
-
-// Luis: el distrito acota la boleta a las personas que sí aparecen en ella.
 export const DistritoStep: React.FC = () => {
   const { next, setAnswer } = useFlow();
-  const perfil = useAnswer<{ entidad?: string; entidad_id?: number }>('votantes.perfil');
-  const [distritos, setDistritos] = useState<{ distrito_id: number; distrito_nombre: string }[]>([]);
+  const perfil = useAnswer<PerfilAnswer>('votantes.perfil');
+  const [distritos, setDistritos] = useState<DistritoVotante[]>([]);
   const [cargando, setCargando] = useState(true);
 
   useEffect(() => {
@@ -24,8 +17,8 @@ export const DistritoStep: React.FC = () => {
       setCargando(false);
       return;
     }
-    fetchDistritos(perfil.entidad_id)
-      .then(setDistritos)
+    fetchEntidadByID(perfil.entidad_id)
+      .then((res) => setDistritos(res.distritos || []))
       .catch(() => setDistritos([]))
       .finally(() => setCargando(false));
   }, [perfil?.entidad_id]);
@@ -41,7 +34,7 @@ export const DistritoStep: React.FC = () => {
   return (
     <StepContainer
       title="¿En qué distrito votas?"
-      subtitle={`${perfil.entidad}. Así comparamos solo a quienes compiten en tu boleta`}
+      subtitle={`${perfil.entidad_display || perfil.entidad}. Así calculamos las métricas y candidatos de tu boleta local`}
     >
       {cargando ? (
         <ActivityIndicator size="large" color="#9F2241" style={{ marginTop: 40 }} />
@@ -52,7 +45,12 @@ export const DistritoStep: React.FC = () => {
             value: d,
           }))}
           onSelect={(distrito) => {
-            setAnswer<Eleccion>('candidatos.eleccion', {
+            setAnswer<PerfilAnswer>('votantes.perfil', (prev) => ({
+              ...prev,
+              distrito_id: distrito.distrito_id,
+              distrito_nombre: distrito.distrito_nombre,
+            }));
+            setAnswer('candidatos.eleccion', {
               entidad: perfil.entidad!,
               entidadId: perfil.entidad_id!,
               distritoId: distrito.distrito_id,
