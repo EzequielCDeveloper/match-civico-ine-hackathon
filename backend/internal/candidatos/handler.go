@@ -278,8 +278,10 @@ func (h *Handler) Boleta(w http.ResponseWriter, r *http.Request) {
 	}
 
 	query := `
-		SELECT id_anonimo, nombre_candidato, partido_coalicion, escolaridad, trayectoria_politica,
-		       propuesta_1_corta, propuesta_2_corta, propuesta_genero_corta
+		SELECT id_anonimo, nombre_candidato, COALESCE(partido_coalicion, ''), COALESCE(escolaridad, ''), COALESCE(trayectoria_politica, ''),
+		       COALESCE(NULLIF(propuesta_1_corta, ''), NULLIF(propuesta_1, ''), ''),
+		       COALESCE(NULLIF(propuesta_2_corta, ''), NULLIF(propuesta_2, ''), ''),
+		       COALESCE(NULLIF(propuesta_genero_corta, ''), NULLIF(propuesta_genero, ''), '')
 		FROM candidatos_candidatos
 		WHERE tipo_candidato = 'Persona Propietaria' AND cargo = ?`
 	args := []any{cargo}
@@ -328,11 +330,12 @@ func (h *Handler) Boleta(w http.ResponseWriter, r *http.Request) {
 	for _, p := range gente {
 		ids = append(ids, p.ID)
 		for n, texto := range p.Textos {
-			if strings.TrimSpace(texto) == "" {
+			t := strings.TrimSpace(texto)
+			if t == "" || strings.EqualFold(t, "sin captura") || strings.EqualFold(t, "sin dato") || strings.EqualFold(t, "no aplica") {
 				continue
 			}
 			propuestas = append(propuestas, propuestaJSON{
-				ID: fmtID(p.ID, n+1), IDAnonimo: p.ID, Texto: texto, Etiquetas: map[string]float64{},
+				ID: fmtID(p.ID, n+1), IDAnonimo: p.ID, Texto: t, Etiquetas: map[string]float64{},
 			})
 		}
 	}

@@ -48,7 +48,10 @@ func setupTestDB(t *testing.T) *sql.DB {
 		propuesta_1 TEXT,
 		propuesta_2 TEXT,
 		propuesta_genero TEXT,
-		tiene_propuestas INTEGER
+		tiene_propuestas INTEGER,
+		propuesta_1_corta TEXT,
+		propuesta_2_corta TEXT,
+		propuesta_genero_corta TEXT
 	);
 	`
 	if _, err := db.Exec(schema); err != nil {
@@ -204,3 +207,54 @@ func TestGetCandidatoByID_InvalidID(t *testing.T) {
 		t.Fatalf("Esperaba status 400 para ID no numérico, obtuvo %d", rr.Code)
 	}
 }
+
+func TestBoleta_FallbackPropuestaCorta(t *testing.T) {
+	db := setupTestDB(t)
+	defer db.Close()
+	router := setupRouter(db)
+
+	// Candidato con propuesta_1 original pero propuesta_1_corta vacia
+	_, err := db.Exec(`
+		INSERT INTO candidatos_candidatos (
+			id_anonimo, nombre_candidato, partido_coalicion, cargo, entidad,
+			distrito_id, tipo_candidato, tiene_propuestas, propuesta_1, propuesta_1_corta
+		) VALUES (
+			10, 'CANDIDATO SENADO TEST', 'PARTIDO VERDE', 'SENADURÍA FEDERAL MR', 'CIUDAD DE MEXICO',
+			0, 'Persona Propietaria', 1, 'Propuesta original completa sobre el agua', ''
+		)
+	`)
+	if err != nil {
+		t.Fatalf("Error insertando candidato para boleta: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/candidatos/boleta?entidad=CIUDAD%20DE%20MEXICO&cargo=SENADO_MR", nil)
+	rr := httptest.NewRecorder()
+	router.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Fatalf("Esperaba status 200, obtuvo %d: %s", rr.Code, rr.Body.String())
+	}
+
+	var res struct {
+		Cargo      string `json:"cargo"`
+		Candidatos []struct {
+			IDAnonimo int    `json:"id_anonimo"`
+			Nombre    string `json:"nombre_candidato"`
+		} `json:"candidatos"`
+		Propuestas []struct {
+			ID    string `json:"id"`
+			Texto string `json:"texto"`
+		} `json:"propuestas"`
+	}
+	if err := json.Unmarshal(rr.Body.Bytes(), &res); err != nil {
+		t.Fatalf("Error deserializando boleta: %v", err)
+	}
+
+	if len(res.Propuestas) == 0 {
+		t.Fatalf("Esperaba al menos 1 propuesta usando fallback, obtuvo 0")
+	}
+	if res.Propuestas[0].Texto != "Propuesta original completa sobre el agua" {
+		t.Errorf("Esperaba texto fallback 'Propuesta original completa sobre el agua', obtuvo '%s'", res.Propuestas[0].Texto)
+	}
+}
+
