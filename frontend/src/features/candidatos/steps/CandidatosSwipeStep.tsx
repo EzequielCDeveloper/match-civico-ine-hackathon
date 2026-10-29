@@ -220,11 +220,11 @@ export const CandidatosSwipeStep: React.FC = () => {
       : tarjeta.propuesta.id
     : null;
 
-  const [segundosRestantes, setSegundosRestantes] = useState(8);
+  const [segundosRestantes, setSegundosRestantes] = useState(10);
 
   useEffect(() => {
     if (!tarjetaKey) return;
-    setSegundosRestantes(8);
+    setSegundosRestantes(10);
     const timer = setInterval(() => {
       setSegundosRestantes((prev) => {
         if (prev <= 1) {
