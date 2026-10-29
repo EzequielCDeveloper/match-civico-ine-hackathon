@@ -5,19 +5,10 @@ import { Button } from '../../../components/ui/Button';
 import { useAnswer, useFlow } from '../../../flow';
 import { TEMA_LABEL } from '../match/motor';
 
-const DESDE_VOTANTES: Record<string, string> = {
-  Educación: 'eje_educacion',
-  Seguridad: 'eje_seguridad',
-  Salud: 'eje_salud',
-  Economía: 'eje_economia',
-  'Medio ambiente': 'eje_ambiente',
-  'Igualdad de género': 'eje_mujeres',
-};
-
 export const PrioridadesStep: React.FC = () => {
   const { next, setAnswer } = useFlow();
   const temasPrevios = useAnswer<{ temas?: string[] }>('votantes.perfil')?.temas ?? [];
-  const iniciales = temasPrevios.map((tema) => DESDE_VOTANTES[tema]).filter(Boolean).slice(0, 3);
+  const iniciales = temasPrevios.filter((tema) => tema in TEMA_LABEL).slice(0, 3);
   const [elegidos, setElegidos] = useState<string[]>(iniciales);
 
   const alternar = (eje: string) => {

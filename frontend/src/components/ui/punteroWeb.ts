@@ -5,7 +5,7 @@ export type Puntero = {
   clientY?: number;
   button?: number;
   pointerId?: number;
-  currentTarget?: { setPointerCapture?: (id: number) => void };
+  currentTarget?: any;
   preventDefault?: () => void;
   nativeEvent?: {
     clientX?: number;
