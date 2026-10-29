@@ -2,13 +2,29 @@ package sistema
 
 import "time"
 
+// PersonaPDF es una candidatura que se imprime en el resultado.
+type PersonaPDF struct {
+	Nombre   string `json:"nombre"`
+	Partido  string `json:"partido,omitempty"`
+	Afinidad int    `json:"afinidad,omitempty"`
+}
+
+// BoletaPDF es el resultado de una de las tres boletas.
+type BoletaPDF struct {
+	Cargo    string       `json:"cargo"`
+	Empate   bool         `json:"empate,omitempty"`
+	Nota     string       `json:"nota,omitempty"`
+	Personas []PersonaPDF `json:"personas,omitempty"`
+}
+
 // ResumenVotante contiene el resultado civico del votante para ser plasmado en el PDF.
 type ResumenVotante struct {
-	Entidad        string `json:"entidad,omitempty"`
-	Distrito       string `json:"distrito,omitempty"`
-	TopDiputacion  string `json:"top_diputacion,omitempty"`
-	TopSenado      string `json:"top_senado,omitempty"`
-	TopPresidencia string `json:"top_presidencia,omitempty"`
+	Entidad        string      `json:"entidad,omitempty"`
+	Distrito       string      `json:"distrito,omitempty"`
+	TopDiputacion  string      `json:"top_diputacion,omitempty"`
+	TopSenado      string      `json:"top_senado,omitempty"`
+	TopPresidencia string      `json:"top_presidencia,omitempty"`
+	Boletas        []BoletaPDF `json:"boletas,omitempty"`
 }
 
 // ExportarPDFRequest defines payload to generate a PDF export.
@@ -34,22 +50,22 @@ type ExportarPDFResponse struct {
 
 // AuditoriaResetItem representa un registro en la tabla sistema_resets.
 type AuditoriaResetItem struct {
-	ID              int64     `json:"id"`
-	TipoReset       string    `json:"tipo_reset"`
-	Motivo          string    `json:"motivo"`
-	UsuarioOSesion  string    `json:"usuario_o_sesion"`
-	RealizadoEn     time.Time `json:"realizado_en"`
+	ID             int64     `json:"id"`
+	TipoReset      string    `json:"tipo_reset"`
+	Motivo         string    `json:"motivo"`
+	UsuarioOSesion string    `json:"usuario_o_sesion"`
+	RealizadoEn    time.Time `json:"realizado_en"`
 }
 
 // AuditoriaExportItem representa un registro en la tabla sistema_exportaciones.
 type AuditoriaExportItem struct {
-	ID            int64     `json:"id"`
-	Formato       string    `json:"formato"`
-	ModuloOrigen  string    `json:"modulo_origen"`
-	ReferenciaID  int       `json:"referencia_id"`
-	Titulo        string    `json:"titulo"`
-	RutaArchivo   string    `json:"ruta_archivo"`
-	CreatedAt     time.Time `json:"created_at"`
+	ID           int64     `json:"id"`
+	Formato      string    `json:"formato"`
+	ModuloOrigen string    `json:"modulo_origen"`
+	ReferenciaID int       `json:"referencia_id"`
+	Titulo       string    `json:"titulo"`
+	RutaArchivo  string    `json:"ruta_archivo"`
+	CreatedAt    time.Time `json:"created_at"`
 }
 
 // AuditoriaResponse resume la actividad auditada en la base de datos.
@@ -103,8 +119,8 @@ type StatusResponse struct {
 	TotalEntidades  int    `json:"total_entidades"`
 	TotalPerfiles   int    `json:"total_perfiles"`
 	ModuloSistema   struct {
-		ExportarPDF              bool `json:"exportar_pdf"`
-		AuditoriaBaseDatos       bool `json:"auditoria_base_datos"`
+		ExportarPDF               bool `json:"exportar_pdf"`
+		AuditoriaBaseDatos        bool `json:"auditoria_base_datos"`
 		ResolucionConflictosMerge bool `json:"resolucion_conflictos_merge"`
 	} `json:"modulo_sistema"`
 }

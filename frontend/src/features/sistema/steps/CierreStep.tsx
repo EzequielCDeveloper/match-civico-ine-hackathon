@@ -10,6 +10,9 @@ import { fetchAuditoria, resolverFusion, AuditoriaResponse, ResultadoFusion } fr
 import { descargarArchivoPDF } from '../utils/descargarPdf';
 import { PerfilAnswer } from '../../votantes/types';
 
+type FilaPDF = { nombre?: string; partido?: string; afinidad?: number };
+type BloquePDF = { empate?: boolean; nota?: string; filas?: FilaPDF[] };
+
 // Módulo Sistema: Exportación oficial a PDF, volver a realizar match, auditoría y resolución de conflictos.
 export const CierreStep: React.FC = () => {
   const { restart } = useFlow();
@@ -24,16 +27,32 @@ export const CierreStep: React.FC = () => {
   const [fusionLoading, setFusionLoading] = useState<boolean>(false);
 
   const exportarConResumen = () => {
-    const topDip = resultado?.diputacion?.filas?.[0]?.nombre;
-    const topSen = resultado?.senado?.filas?.[0]?.nombre;
-    const topPres = resultado?.presidencia?.filas?.[0]?.nombre;
+    const boleta = (bloque: BloquePDF | undefined, cargo: string) => {
+      const filas = bloque?.filas ?? [];
+      const cuantas = bloque?.empate ? 2 : 1;
+      const personas = filas.slice(0, cuantas).map((fila) => ({
+        nombre: fila.nombre || 'Sin nombre',
+        partido: fila.partido,
+        afinidad: Math.round((fila.afinidad || 0) * 100),
+      }));
+      return {
+        cargo,
+        empate: !!bloque?.empate && !bloque?.nota,
+        nota: personas.length === 0 ? bloque?.nota || 'No evaluada' : bloque?.nota,
+        personas,
+      };
+    };
+    const dip = boleta(resultado?.diputacion, 'Diputación');
+    const sen = boleta(resultado?.senado, 'Senado');
+    const pre = boleta(resultado?.presidencia, 'Presidencia');
 
     handleExportPDF('candidatos', 1, {
       entidad: perfil?.entidad_display || perfil?.entidad || '',
       distrito: perfil?.distrito_nombre ? `${perfil?.distrito_id} · ${perfil?.distrito_nombre}` : '',
-      top_diputacion: topDip || 'No evaluada',
-      top_senado: topSen || 'No evaluada',
-      top_presidencia: topPres || 'No evaluada',
+      top_diputacion: dip.personas[0]?.nombre || 'No evaluada',
+      top_senado: sen.personas[0]?.nombre || 'No evaluada',
+      top_presidencia: pre.personas[0]?.nombre || 'No evaluada',
+      boletas: [dip, sen, pre],
     }).catch(() => undefined);
   };
 
