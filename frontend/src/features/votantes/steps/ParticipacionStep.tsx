@@ -20,18 +20,50 @@ export const ParticipacionStep: React.FC = () => {
   useEffect(() => {
     let cancelled = false;
 
+    if (!perfil?.edad || !perfil?.entidad_id) {
+      setLoading(false);
+      setError('Faltan datos de tu perfil. Vuelve a los pasos anteriores para seleccionarlos.');
+      return;
+    }
+
+    const edad = perfil.edad;
+    const entidadId = perfil.entidad_id;
+
+    if (perfil.resultado_calculo) {
+      setStats({
+        perfil_id: perfil.resultado_calculo.perfil_id ?? 0,
+        nombre_alias: perfil.nombre_alias || 'Votante',
+        edad,
+        sexo: perfil.sexo,
+        es_joven: perfil.resultado_calculo.es_joven,
+        entidad_id: entidadId,
+        entidad: perfil.entidad || '',
+        distrito_id: perfil.distrito_id,
+        distrito_nombre: perfil.distrito_nombre,
+        participacion_esperada_pct: perfil.resultado_calculo.participacion_esperada_pct,
+        abstencionismo_esperado_pct: perfil.resultado_calculo.abstencionismo_esperado_pct,
+        participacion_joven_pct: perfil.resultado_calculo.participacion_joven_pct,
+        abstencionismo_joven_pct: perfil.resultado_calculo.abstencionismo_joven_pct,
+        brecha_abstencionismo_joven_pts: perfil.resultado_calculo.brecha_abstencionismo_joven_pts,
+        participacion_genero_pct: perfil.resultado_calculo.participacion_genero_pct,
+        mensaje_participacion: perfil.resultado_calculo.mensaje_participacion,
+      });
+      setLoading(false);
+      return;
+    }
+
     const calcularYPersistirPerfil = async () => {
       setLoading(true);
       setError(null);
 
       const payload = {
-        nombre_alias: perfil?.nombre_alias || 'Votante',
-        edad: perfil?.edad || 21,
-        sexo: perfil?.sexo || 'Hombre',
-        entidad_id: perfil?.entidad_id || 9,
-        distrito_id: perfil?.distrito_id || 0,
-        temas: perfil?.temas || [],
-        prioridad_tema: perfil?.prioridad_tema || '',
+        nombre_alias: perfil.nombre_alias || 'Votante',
+        edad,
+        sexo: perfil.sexo || 'No especificado',
+        entidad_id: entidadId,
+        distrito_id: perfil.distrito_id ?? 0,
+        temas: perfil.temas || [],
+        prioridad_tema: perfil.prioridad_tema || '',
       };
 
       try {
@@ -56,20 +88,23 @@ export const ParticipacionStep: React.FC = () => {
       } catch (err: any) {
         if (!cancelled) {
           // Graceful fallback with INE official averages
-          const esJoven = (perfil?.edad ?? 21) <= 29;
+          const esJoven = edad <= 29;
           const fallbackRes: PerfilVotanteResponse = {
             perfil_id: 0,
-            nombre_alias: perfil?.nombre_alias || 'Votante',
-            edad: perfil?.edad || 21,
+            nombre_alias: perfil.nombre_alias || 'Votante',
+            edad,
+            sexo: perfil.sexo,
             es_joven: esJoven,
-            entidad_id: perfil?.entidad_id || 9,
-            entidad: perfil?.entidad || 'CIUDAD DE MEXICO',
+            entidad_id: entidadId,
+            entidad: perfil.entidad || 'CIUDAD DE MEXICO',
+            distrito_id: perfil.distrito_id,
+            distrito_nombre: perfil.distrito_nombre,
             participacion_esperada_pct: esJoven ? 59.8 : 68.0,
             abstencionismo_esperado_pct: esJoven ? 40.2 : 32.0,
             participacion_joven_pct: 59.8,
             abstencionismo_joven_pct: 40.2,
             brecha_abstencionismo_joven_pts: 8.2,
-            mensaje_participacion: `En ${perfil?.entidad_display || perfil?.entidad || 'tu estado'}, la participación ciudadana estimada es del ${esJoven ? '59.8%' : '68.0%'}.`,
+            mensaje_participacion: `En ${perfil.entidad_display || perfil.entidad || 'tu estado'}, la participación ciudadana estimada es del ${esJoven ? '59.8%' : '68.0%'}.`,
           };
           setStats(fallbackRes);
         }
@@ -84,7 +119,7 @@ export const ParticipacionStep: React.FC = () => {
     return () => {
       cancelled = true;
     };
-  }, [perfil?.entidad_id, perfil?.edad, perfil?.entidad, perfil?.sexo, perfil?.prioridad_tema, setAnswer]);
+  }, [perfil?.entidad_id, perfil?.edad, perfil?.entidad, perfil?.sexo, perfil?.distrito_id, perfil?.prioridad_tema, perfil?.resultado_calculo, setAnswer]);
 
   return (
     <StepContainer
@@ -96,6 +131,10 @@ export const ParticipacionStep: React.FC = () => {
           <ActivityIndicator size="large" color="#9F2241" />
           <Text style={styles.loadingText}>Calculando perfil cívico con datos censales del INE...</Text>
         </View>
+      ) : error ? (
+        <Card style={styles.messageCard}>
+          <Text style={styles.explanationText}>{error}</Text>
+        </Card>
       ) : stats ? (
         <View>
           <VoterStatsCard
