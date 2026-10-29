@@ -105,3 +105,9 @@ npm run ios
 1. Cada desarrollador trabaja **únicamente** en su carpeta de feature (`internal/<modulo>` en backend y `src/features/<modulo>` en frontend).
 2. **Prohibido importar código entre features distintas**. Si necesitas compartir lógica visual genérica, usa `src/components/ui/` o `internal/common/`.
 3. Para deshabilitar un módulo (por ejemplo en un demo o refactor), solo se comenta una línea en `cmd/api/main.go` y una en `frontend/src/flow/steps.ts`.
+
+---
+
+## 📋 Documentación de Auditoría y Mejoras
+Para consultar el detalle de los vectores de fallo subsanados, las optimizaciones de flujo y las mejoras de experiencia ciudadana, consulta:
+- [`docs/auditoria_y_mejoras_match_civico.md`](docs/auditoria_y_mejoras_match_civico.md)
