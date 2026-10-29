@@ -1,5 +1,5 @@
-import React from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import React, { useEffect } from 'react';
+import { BackHandler, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { FlowPager } from './FlowPager';
 import { useFlow } from './FlowContext';
@@ -7,6 +7,17 @@ import { useFlow } from './FlowContext';
 export const FlowShell: React.FC = () => {
   const { index, total, back } = useFlow();
   const progress = total > 1 ? index / (total - 1) : 1;
+
+  useEffect(() => {
+    const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+      if (index > 0) {
+        back();
+        return true;
+      }
+      return false;
+    });
+    return () => sub.remove();
+  }, [back, index]);
 
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'left', 'right', 'bottom']}>

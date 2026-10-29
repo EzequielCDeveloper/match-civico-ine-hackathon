@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import { StepContainer } from '../../../components/ui/StepContainer';
 import { Button } from '../../../components/ui/Button';
@@ -107,7 +107,7 @@ const armar = (boleta: BoletaResponse, titulo: string, final: Creencia, historia
 };
 
 export const CandidatosSwipeStep: React.FC = () => {
-  const { next, setAnswer } = useFlow();
+  const { next, setAnswer, registerBackHandler } = useFlow();
   const eleccion = useAnswer<Eleccion>('candidatos.eleccion');
   const prioridades = useAnswer<string[]>('candidatos.prioridades') ?? [];
 
@@ -125,6 +125,29 @@ export const CandidatosSwipeStep: React.FC = () => {
   const saltado = useRef(-1);
 
   type CargoClave = (typeof BLOQUES)[number]['clave'];
+
+  const retrocederBoleta = useCallback(() => {
+    if (bloqueRef.current > 0) {
+      const prevBloque = bloqueRef.current - 1;
+      bloqueRef.current = prevBloque;
+      const nuevoAcumulado = { ...acumulado.current };
+      delete nuevoAcumulado[BLOQUES[prevBloque]?.clave];
+      delete nuevoAcumulado[BLOQUES[prevBloque + 1]?.clave];
+      acumulado.current = nuevoAcumulado;
+      setBloque(prevBloque);
+      setBoleta(null);
+      setCargando(true);
+      return true;
+    }
+    return false;
+  }, []);
+
+  useEffect(() => {
+    registerBackHandler(retrocederBoleta);
+    return () => {
+      registerBackHandler(null);
+    };
+  }, [registerBackHandler, retrocederBoleta]);
 
   useEffect(() => {
     if (!eleccion?.entidad) {
