@@ -2,23 +2,6 @@ package sistema
 
 import "time"
 
-// ResetRequest defines payload for clearing application or session state.
-type ResetRequest struct {
-	TipoReset string `json:"tipo_reset"` // e.g. "PERFILES", "FULL", "CACHE"
-	Motivo    string `json:"motivo"`
-	Actor     string `json:"actor,omitempty"`
-}
-
-// ResetResponse contains the summary of the reset operation.
-type ResetResponse struct {
-	OK                 bool      `json:"ok"`
-	TipoReset          string    `json:"tipo_reset"`
-	Mensaje            string    `json:"mensaje"`
-	RegistrosAfectados int64     `json:"registros_afectados"`
-	RutaSnapshot       string    `json:"ruta_snapshot,omitempty"`
-	Timestamp          time.Time `json:"timestamp"`
-}
-
 // ResumenVotante contiene el resultado civico del votante para ser plasmado en el PDF.
 type ResumenVotante struct {
 	Entidad        string `json:"entidad,omitempty"`
@@ -120,7 +103,6 @@ type StatusResponse struct {
 	TotalEntidades  int    `json:"total_entidades"`
 	TotalPerfiles   int    `json:"total_perfiles"`
 	ModuloSistema   struct {
-		ResetInfoApp             bool `json:"reset_info_app"`
 		ExportarPDF              bool `json:"exportar_pdf"`
 		AuditoriaBaseDatos       bool `json:"auditoria_base_datos"`
 		ResolucionConflictosMerge bool `json:"resolucion_conflictos_merge"`

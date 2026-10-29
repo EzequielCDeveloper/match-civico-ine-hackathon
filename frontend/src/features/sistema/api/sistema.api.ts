@@ -7,20 +7,6 @@ export interface SystemStatus {
   total_perfiles: number;
 }
 
-export interface ResetPayload {
-  tipo_reset?: string; // "PERFILES" | "FULL"
-  motivo?: string;
-}
-
-export interface ResetResponse {
-  ok: boolean;
-  tipo_reset: string;
-  mensaje: string;
-  registros_afectados: number;
-  ruta_snapshot?: string;
-  timestamp: string;
-}
-
 export interface ResumenVotante {
   entidad?: string;
   distrito?: string;
@@ -111,13 +97,7 @@ export const fetchSystemStatus = async (): Promise<SystemStatus> => {
   return data;
 };
 
-// 1. Reset de información
-export const executeReset = async (payload?: ResetPayload): Promise<ResetResponse> => {
-  const { data } = await apiClient.post<ResetResponse>('/api/v1/sistema/reset', payload || {});
-  return data;
-};
-
-// 2. Exportar a PDF
+// 1. Exportar a PDF
 export const exportarPDF = async (
   payload: ExportarPDFPayload
 ): Promise<ExportarPDFResponse> => {

@@ -68,44 +68,6 @@ func setupRouter(t *testing.T, db *sql.DB) *chi.Mux {
 	return r
 }
 
-func Test1_ResetApp(t *testing.T) {
-	db := setupTestDB(t)
-	defer db.Close()
-	r := setupRouter(t, db)
-
-	reqBody, _ := json.Marshal(sistema.ResetRequest{
-		TipoReset: "PERFILES",
-		Motivo:    "Prueba de reset unitaria",
-		Actor:     "juan_test",
-	})
-	req := httptest.NewRequest(http.MethodPost, "/sistema/reset", bytes.NewReader(reqBody))
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("X-Admin-Token", "test-admin-secret")
-	rec := httptest.NewRecorder()
-
-	r.ServeHTTP(rec, req)
-
-	if rec.Code != http.StatusOK {
-		t.Fatalf("Esperado 200, obtenido %d: %s", rec.Code, rec.Body.String())
-	}
-
-	var resp sistema.ResetResponse
-	_ = json.Unmarshal(rec.Body.Bytes(), &resp)
-	if !resp.OK {
-		t.Fatalf("Esperado OK = true")
-	}
-	if resp.RegistrosAfectados != 2 {
-		t.Errorf("Esperado 2 perfiles eliminados, obtenido %d", resp.RegistrosAfectados)
-	}
-
-	// Verificar registro en tabla sistema_resets
-	var count int
-	_ = db.QueryRow("SELECT count(*) FROM sistema_resets WHERE tipo_reset = 'PERFILES'").Scan(&count)
-	if count != 1 {
-		t.Errorf("Se esperaba 1 registro en tabla sistema_resets, encontrado %d", count)
-	}
-}
-
 func Test2_ExportarPDF(t *testing.T) {
 	db := setupTestDB(t)
 	defer db.Close()
@@ -235,11 +197,10 @@ func Test5_StatusSistema(t *testing.T) {
 
 	var resp sistema.StatusResponse
 	_ = json.Unmarshal(rec.Body.Bytes(), &resp)
-	if !resp.ModuloSistema.ResetInfoApp ||
-		!resp.ModuloSistema.ExportarPDF ||
+	if !resp.ModuloSistema.ExportarPDF ||
 		!resp.ModuloSistema.AuditoriaBaseDatos ||
 		!resp.ModuloSistema.ResolucionConflictosMerge {
-		t.Errorf("Las 4 funciones del módulo deben estar marcadas como activas en status")
+		t.Errorf("Las funciones activas del módulo deben estar marcadas como activas en status")
 	}
 }
 
@@ -305,23 +266,6 @@ func Test6_ExportacionesSoloBajoSistemaDataDir(t *testing.T) {
 
 	if despues := nombresEnDirectorio(t, "."); !reflect.DeepEqual(antes, despues) {
 		t.Fatalf("la exportación escribió en el árbol de trabajo: %v", despues)
-	}
-}
-
-func TestResetApp_SinToken_Forbidden(t *testing.T) {
-	db := setupTestDB(t)
-	defer db.Close()
-	r := setupRouter(t, db)
-
-	reqBody, _ := json.Marshal(sistema.ResetRequest{TipoReset: "PERFILES"})
-	req := httptest.NewRequest(http.MethodPost, "/sistema/reset", bytes.NewReader(reqBody))
-	req.Header.Set("Content-Type", "application/json")
-	// Sin cabecera X-Admin-Token
-	rec := httptest.NewRecorder()
-	r.ServeHTTP(rec, req)
-
-	if rec.Code != http.StatusForbidden {
-		t.Fatalf("Esperado 403 Forbidden sin token admin, obtenido %d", rec.Code)
 	}
 }
 

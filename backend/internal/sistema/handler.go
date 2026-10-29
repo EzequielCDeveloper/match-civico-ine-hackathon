@@ -47,73 +47,7 @@ func (h *Handler) verificarAdmin(r *http.Request) bool {
 	return tokenRecibido != "" && tokenRecibido == tokenEsperado
 }
 
-// 1. ResetInfo handles resetting user profiles or application cache with snapshot backup and database audit.
-func (h *Handler) ResetInfo(w http.ResponseWriter, r *http.Request) {
-	if !h.verificarAdmin(r) {
-		common.RespondError(w, http.StatusForbidden, "Acceso no autorizado: se requiere token de administrador en X-Admin-Token")
-		return
-	}
-
-	var req ResetRequest
-	_ = json.NewDecoder(r.Body).Decode(&req)
-
-	if req.TipoReset == "" {
-		req.TipoReset = "PERFILES"
-	}
-	if req.Actor == "" {
-		req.Actor = "admin_api"
-	}
-	if req.Motivo == "" {
-		req.Motivo = "Reinicio de información de la app"
-	}
-
-	var affected int64 = 0
-
-	// Snapshot previo en sistema_resets/
-	nombreSnapshot := fmt.Sprintf("snapshot_reset_%s.json", time.Now().Format("20060102_150405"))
-	rutaSnapshot := filepath.Join(h.carpeta("sistema_resets"), nombreSnapshot)
-
-	snapshotData := map[string]any{
-		"tipo":         req.TipoReset,
-		"motivo":       req.Motivo,
-		"actor":        req.Actor,
-		"fecha_backup": time.Now().UTC(),
-	}
-	if b, err := json.MarshalIndent(snapshotData, "", "  "); err == nil {
-		_ = os.WriteFile(rutaSnapshot, b, 0644)
-	}
-
-	if strings.ToUpper(req.TipoReset) == "PERFILES" {
-		res, execErr := h.db.Exec("DELETE FROM votantes_perfiles")
-		if execErr != nil {
-			common.RespondError(w, http.StatusInternalServerError, "Error deleting profiles: "+execErr.Error())
-			return
-		}
-		affected, _ = res.RowsAffected()
-	} else if strings.ToUpper(req.TipoReset) == "FULL" {
-		res, execErr := h.db.Exec("DELETE FROM votantes_perfiles")
-		if execErr == nil {
-			affected, _ = res.RowsAffected()
-		}
-	}
-
-	// Registrar en tabla de auditoría
-	_, _ = h.db.Exec(`
-		INSERT INTO sistema_resets (tipo_reset, motivo, usuario_o_sesion)
-		VALUES (?, ?, ?)
-	`, req.TipoReset, req.Motivo, req.Actor)
-
-	common.RespondJSON(w, http.StatusOK, ResetResponse{
-		OK:                 true,
-		TipoReset:          req.TipoReset,
-		Mensaje:            fmt.Sprintf("Reset exitoso de tipo '%s'. %d registros eliminados.", req.TipoReset, affected),
-		RegistrosAfectados: affected,
-		RutaSnapshot:       rutaSnapshot,
-		Timestamp:          time.Now().UTC(),
-	})
-}
-
-// 2. ExportarPDF generates a real, valid PDF document and stores it in the database audit table.
+// 1. ExportarPDF generates a real, valid PDF document and stores it in the database audit table.
 func (h *Handler) ExportarPDF(w http.ResponseWriter, r *http.Request) {
 	var req ExportarPDFRequest
 	_ = json.NewDecoder(r.Body).Decode(&req)
@@ -377,7 +311,6 @@ func (h *Handler) Status(w http.ResponseWriter, r *http.Request) {
 		TotalEntidades:  totalEntidades,
 		TotalPerfiles:   totalPerfiles,
 	}
-	res.ModuloSistema.ResetInfoApp = true
 	res.ModuloSistema.ExportarPDF = true
 	res.ModuloSistema.AuditoriaBaseDatos = true
 	res.ModuloSistema.ResolucionConflictosMerge = true

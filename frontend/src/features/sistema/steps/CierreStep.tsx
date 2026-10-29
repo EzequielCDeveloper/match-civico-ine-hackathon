@@ -7,14 +7,15 @@ import { useAnswer, useFlow } from '../../../flow';
 import { useSystem } from '../hooks/useSystem';
 import { SystemActionPanel } from '../components/SystemActionPanel';
 import { fetchAuditoria, resolverFusion, AuditoriaResponse, ResultadoFusion } from '../api/sistema.api';
+import { descargarArchivoPDF } from '../utils/descargarPdf';
 import { PerfilAnswer } from '../../votantes/types';
 
-// Juan — final step: Reset de info, exportar a PDF, auditoría de base de datos y resolución de conflictos.
+// Módulo Sistema: Exportación oficial a PDF, volver a realizar match, auditoría y resolución de conflictos.
 export const CierreStep: React.FC = () => {
   const { restart } = useFlow();
   const perfil = useAnswer<PerfilAnswer>('votantes.perfil');
   const resultado = useAnswer<any>('candidatos.resultado');
-  const { resetLoading, exportLoading, lastExport, lastReset, handleExportPDF } = useSystem();
+  const { exportLoading, lastExport, handleExportPDF } = useSystem();
   const isAdmin = process.env.EXPO_PUBLIC_ADMIN === '1';
 
   const [auditoriaData, setAuditoriaData] = useState<AuditoriaResponse | null>(null);
@@ -78,24 +79,20 @@ export const CierreStep: React.FC = () => {
     <StepContainer title="¡Listo!" subtitle="Tus resultados cívicos están listos para revisión y descarga">
       <SystemActionPanel
         exportLoading={exportLoading}
-        resetLoading={resetLoading}
         onExport={exportarConResumen}
-        onReset={restart}
+        onVolverARealizarMatch={restart}
       />
 
       {lastExport && (
         <Card style={styles.cardInfo}>
-          <Text style={styles.ok}>📄 PDF generado ({lastExport.tamano_bytes || 2850} bytes)</Text>
-          <Text style={styles.subtext}>{lastExport.ruta_o_url}</Text>
-        </Card>
-      )}
-
-      {lastReset && (
-        <Card style={styles.cardInfo}>
-          <Text style={styles.ok}>🔄 Reset completado ({lastReset.registros_afectados} perfiles limpiados)</Text>
-          {lastReset.ruta_snapshot && (
-            <Text style={styles.subtext}>Snapshot: {lastReset.ruta_snapshot}</Text>
-          )}
+          <Text style={styles.ok}>📄 PDF generado y descargado ({lastExport.tamano_bytes || 2850} bytes)</Text>
+          <Text style={styles.subtext}>El reporte oficial con tus coincidencias electorales se descargó en tu dispositivo.</Text>
+          <Button
+            title="📥 Volver a descargar PDF"
+            variant="secondary"
+            onPress={() => descargarArchivoPDF(lastExport.ruta_o_url, 'reporte_match_civico.pdf')}
+            style={styles.reDownloadBtn}
+          />
         </Card>
       )}
 
@@ -146,13 +143,17 @@ export const CierreStep: React.FC = () => {
 
 const styles = StyleSheet.create({
   cardInfo: {
-    marginVertical: 6,
+    marginVertical: 10,
     backgroundColor: '#F0FDF4',
     borderColor: '#BBF7D0',
     borderWidth: 1,
+    padding: 14,
   },
-  ok: { color: '#15803d', fontSize: 13, fontWeight: '700' },
-  subtext: { color: '#4B5563', fontSize: 11, marginTop: 4 },
+  ok: { color: '#15803d', fontSize: 14, fontWeight: '700' },
+  subtext: { color: '#4B5563', fontSize: 12, marginTop: 4, lineHeight: 18 },
+  reDownloadBtn: {
+    marginTop: 10,
+  },
   adminCard: {
     marginVertical: 10,
     backgroundColor: '#F9FAFB',
