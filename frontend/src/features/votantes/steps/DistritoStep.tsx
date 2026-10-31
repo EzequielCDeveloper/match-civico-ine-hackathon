@@ -6,6 +6,19 @@ import { useAnswer, useFlow } from '../../../flow';
 import { fetchEntidadByID, DistritoVotante } from '../api/votantes.api';
 import { PerfilAnswer } from '../types';
 
+function cabeceraLegible(nombre: string): string {
+  return nombre
+    .toLowerCase()
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((parte) => parte.charAt(0).toUpperCase() + parte.slice(1))
+    .join(' ');
+}
+
+function etiquetaDistrito(distrito: DistritoVotante): string {
+  return `${cabeceraLegible(distrito.distrito_nombre)} · Distrito ${distrito.distrito_id}`;
+}
+
 export const DistritoStep: React.FC = () => {
   const { next, setAnswer } = useFlow();
   const perfil = useAnswer<PerfilAnswer>('votantes.perfil');
@@ -34,16 +47,18 @@ export const DistritoStep: React.FC = () => {
   return (
     <StepContainer
       title="¿En qué distrito votas?"
-      subtitle={`${perfil.entidad_display || perfil.entidad}. Así calculamos las métricas y candidatos de tu boleta local`}
+      subtitle={`${perfil.entidad_display || perfil.entidad}. El número es tu distrito federal: una ciudad grande tiene varios`}
     >
       {cargando ? (
         <ActivityIndicator size="large" color="#9F2241" style={{ marginTop: 40 }} />
       ) : (
         <ChoiceList
-          options={distritos.map((d) => ({
-            label: `${d.distrito_id} · ${d.distrito_nombre}`,
-            value: d,
-          }))}
+          options={[...distritos]
+            .sort((a, b) => a.distrito_nombre.localeCompare(b.distrito_nombre, 'es') || a.distrito_id - b.distrito_id)
+            .map((d) => ({
+              label: etiquetaDistrito(d),
+              value: d,
+            }))}
           onSelect={(distrito) => {
             setAnswer<PerfilAnswer>('votantes.perfil', (prev) => ({
               ...prev,
