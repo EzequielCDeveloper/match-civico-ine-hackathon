@@ -7,12 +7,26 @@ export interface SystemStatus {
   total_perfiles: number;
 }
 
+export interface PersonaPDF {
+  nombre: string;
+  partido?: string;
+  afinidad?: number;
+}
+
+export interface BoletaPDF {
+  cargo: string;
+  empate?: boolean;
+  nota?: string;
+  personas?: PersonaPDF[];
+}
+
 export interface ResumenVotante {
   entidad?: string;
   distrito?: string;
   top_diputacion?: string;
   top_senado?: string;
   top_presidencia?: string;
+  boletas?: BoletaPDF[];
 }
 
 export interface ExportarPDFPayload {
